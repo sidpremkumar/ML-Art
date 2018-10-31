@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = (10,10)
 mpl.rcParams['axes.grid'] = False
@@ -71,12 +72,14 @@ def load_img(path_to_img):
     scale = max_dim / long
     width, height = img.size
 
-    #scale and resize the images, so that they are the same
-    img = img.resize((int(width*scale), int(height*scale)), Image.ANTIALIAS)
+    # scale and resize the images, so that they are the same
+    img = img.resize((int(width * scale), int(height * scale)), Image.ANTIALIAS)
     img = kp_image.img_to_array(img)
     # We need to broadcast the image array such that it has a batch dimension
     img = np.expand_dims(img, axis=0)
     return img
+
+
 
 def imshow(img, title=None):
   # Remove the batch dimension
@@ -85,7 +88,7 @@ def imshow(img, title=None):
   out = out.astype('uint8')
   plt.imshow(out)
   if title is not None:
-    plt.title(title)
+      plt.title(title)
   plt.imshow(out)
 
 def load_and_process_img(path_to_img):
@@ -117,7 +120,7 @@ def get_model():
     #Actually creating the VCG19 model
     #we will access intermidiate layers
     vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
-    vgg.trainable=False
+    vgg.trainable = False
 
     #Get corresponding intermiditate layer
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
@@ -125,7 +128,12 @@ def get_model():
     model_outputs = style_outputs + content_outputs
 
     #return and build the model
-    return models.Model(vgg.input,model_outputs)
+    return models.Model(vgg.input, model_outputs)
+
+
+
+
+
 
 def get_content_loss(base_content,target):
     #if we think of the base content as p (with x-y-z) and target as x (with x-y-z)
@@ -135,10 +143,10 @@ def get_content_loss(base_content,target):
 def gram_matrix(input_tensor):
     #returning a gram matrix version of the intermidiate layers
     channels = int(input_tensor.shape[-1])
-    a = tf.reshape(input_tensor,[-1,channels])
+    a = tf.reshape(input_tensor, [-1, channels])
     n = tf.shape(a)[0]
-    gram = tf.matmul(a,a,transpose_a=True)
-    return gram / tf.cast(n,tf.float32)
+    gram = tf.matmul(a, a, transpose_a=True)
+    return gram / tf.cast(n, tf.float32)
 
 def get_style_loss(base_style, gram_target):
     #compares the gram matrixes of the two, one is the style image,
@@ -147,7 +155,7 @@ def get_style_loss(base_style, gram_target):
 
     return tf.reduce_mean(tf.square(gram_style - gram_target))
 
-def get_feature_representaions(model,content_path,style_path):
+def get_feature_representations(model,content_path,style_path):
     #helper function for gradient decent
     #get the images loaded and processed,
 
@@ -167,7 +175,7 @@ def get_feature_representaions(model,content_path,style_path):
 def compute_loss(model, loss_weights,init_image,gram_style_features,content_features):
     #returns the total loss, stlye loss, content loss, and total variational loss
 
-    style_weight,content_weight = loss_weights
+    style_weight, content_weight = loss_weights
 
     #pass in our pre-processed image into the model
     model_outputs = model(init_image)
@@ -178,23 +186,23 @@ def compute_loss(model, loss_weights,init_image,gram_style_features,content_feat
     style_score = 0
     content_score = 0
 
-    weight_per_style_layer = 1.0 /float(num_style_layers)
-    for target_style,comb_style in zip(gram_style_features, style_output_features):
+    weight_per_style_layer = 1.0 / float(num_style_layers)
+    for target_style, comb_style in zip(gram_style_features, style_output_features):
         style_score += weight_per_style_layer * get_style_loss(comb_style[0], target_style)
 
-
-    weight_per_content_layer = 1.0/float(num_content_layers)
+    weight_per_content_layer = 1.0 / float(num_content_layers)
     for target_content, comb_content in zip(content_features, content_output_features):
         content_score += weight_per_content_layer * get_content_loss(comb_content[0], target_content)
 
     style_score *= style_weight
     content_score *= content_weight
 
+
     #get total loss
     loss = style_score + content_score
-    return loss,style_score,content_score
+    return loss, style_score, content_score
 
-def compute_grades(cfg):
+def compute_grads(cfg):
     with tf.GradientTape() as tape:
         all_loss = compute_loss(**cfg)
     # Compute gradients wrt input image
@@ -208,60 +216,63 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         layer.trainable = False
 
     #get the style and feature prepresentations, for our interested layers (intermidieate)
-    style_features, content_features = get_feature_representaions(model, content_path,style_path)
-    gram_style_features = [gram_matrix(style_features) for style_features in style_features]
+    style_features, content_features = get_feature_representations(model, content_path, style_path)
+    gram_style_features = [gram_matrix(style_feature) for style_feature in style_features]
 
     #load and process inital image, convert it
     init_image = load_and_process_img(content_path)
     init_image = tfe.Variable(init_image, dtype=tf.float32)
 
     #create our optimizer
-    opt = tf.train.AdamOptimizer(learning_rate=5, beta1=0.99,epsilon=1e-1)
+    opt = tf.train.AdamOptimizer(learning_rate=5, beta1=0.99, epsilon=1e-1)
 
     #tracker for displaying intermediate images
 
     iter_count = 1
 
     #store out best result
-    best_loss, best_img = float('inf'),None
+    best_loss, best_img = float('inf'), None
 
-    loss_weights = (style_weight,content_weight)
+    loss_weights = (style_weight, content_weight)
     cfg = {
         'model': model,
         'loss_weights': loss_weights,
         'init_image': init_image,
-        'gram_style_features':gram_style_features,
-        'content_features':content_features
+        'gram_style_features': gram_style_features,
+        'content_features': content_features
     }
 
     #for displaying
     num_rows = 2
     num_cols = 5
-    display_interval = num_iterations/(num_rows * num_cols)
-
+    display_interval = num_iterations / (num_rows * num_cols)
     start_time = time.time()
-    global_start = time.time
+    global_start = time.time()
 
     #what we want to normilize the mean around
-    norm_means = np.array([1033.393,116.779,123.68])
+    norm_means = np.array([103.939, 116.779, 123.68])
     min_vals = -norm_means
     max_vals = 255 - norm_means
 
+
+
     imgs=[]
     for i in range(num_iterations):
-        grads, all_loss = compute_grades(cfg)
+        grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
         init_image.assign(clipped)
         end_time = time.time()
-
+        print(i)
         if loss < best_loss:
             #updates best loss
             best_loss = loss
-            best_image = deprocess_img(init_image.numpy())
+            best_img = deprocess_img(init_image.numpy())
         if i % display_interval == 0:
             start_time = time.time()
+
+            # Use the .numpy() method to get the concrete numpy array
             plot_img = init_image.numpy()
             plot_img = deprocess_img(plot_img)
             imgs.append(plot_img)
@@ -272,16 +283,20 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
                   'style loss: {:.4e}, '
                   'content loss: {:.4e}, '
                   'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
+
+
     print('Total time: {:.4f}s'.format(time.time() - global_start))
-    IPython.dsplay.clear_output(wait=True)
-    plt.figure(figsize=(14,4))
-    for i,img in enumerate(imgs):
-        plt.subplot(num_rows,num_cols,i+1)
+    IPython.display.clear_output(wait=True)
+    plt.figure(figsize=(14, 4))
+    for i, img in enumerate(imgs):
+        plt.subplot(num_rows, num_cols, i + 1)
         plt.imshow(img)
         plt.xticks([])
         plt.yticks([])
 
-    return best_img,best_loss
+    return best_img, best_loss
+
+
 
 
 
