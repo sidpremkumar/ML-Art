@@ -33,12 +33,15 @@ style_path = 'img/s1.jpg'
 content_layers = ['block5_conv2']
 
 # Style layer we are interested in
+#total time - 25sec MBP
 style_layers = ['block1_conv1',
                 'block2_conv1',
                 'block3_conv1',
                 'block4_conv1',
                 'block5_conv1'
                ]
+#less intensive - 20sec on MBP
+# style_layers = ['block1_conv1']
 
 num_content_layers = len(content_layers)
 num_style_layers = len(style_layers)
@@ -192,6 +195,8 @@ def compute_loss(model, loss_weights,init_image,gram_style_features,content_feat
     content_score = 0
 
     weight_per_style_layer = 1.0 / float(num_style_layers)
+    # print("length")
+    # print(len(zip(gram_style_features, style_output_features)))
     for target_style, comb_style in zip(gram_style_features, style_output_features):
         style_score += weight_per_style_layer * get_style_loss(comb_style[0], target_style)
 
@@ -273,13 +278,29 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     end_time = time.time()
 
     for i in range(num_iterations-1):
+        start_time_iter = time.time()
+        start_compute_grades = time.time()
         grads, all_loss = compute_grads(cfg)
+        compute_grads_rtime = time.time() - start_compute_grades
         loss, style_score, content_score = all_loss
+        start_apply_grad = time.time()
         opt.apply_gradients([(grads, init_image)])
+        compute_apply_grad_rtime = time.time() - start_apply_grad
+        start_get_clipped = time.time()
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
+        compute_get_clipped_rtime = time.time() - start_get_clipped
+        start_apply_clipped = time.time()
         init_image.assign(clipped)
-        end_time = time.time()
+        compute_apply_clipped_rtime = time.time() - start_apply_clipped
+        totaltime_iter = time.time() - start_time_iter
+
         print(i)
+        print("%Compute Grads Response Time: " + str(100*(compute_grads_rtime/totaltime_iter)))
+        print("%Apply Grads Response Time: " +  str(100*(compute_apply_grad_rtime/totaltime_iter)))
+        print("%Getting Clipped Response Time: " + str(100*(compute_get_clipped_rtime/totaltime_iter)))
+        print("%Applying Clipped Response Time: " + str(100*(compute_apply_clipped_rtime/totaltime_iter)))
+        print("Total Iteration Time: " + str(totaltime_iter))
+
         if loss < best_loss:
             #updates best loss
             best_loss = loss
