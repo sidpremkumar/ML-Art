@@ -10,6 +10,10 @@ from PIL import Image
 import time
 import functools
 
+
+
+import pickle
+
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
@@ -20,8 +24,8 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 #Global Variables here:
-content_path = 'img/Green_Sea_Turtle_grazing_seagrass.jpg'
-style_path = 'img/The_Great_Wave_off_Kanagawa.jpg'
+content_path = 'img/c1.jpeg'
+style_path = 'img/s1.jpg'
 
 
 #The intermidiate layers that we are going to be looking for:
@@ -39,9 +43,10 @@ style_layers = ['block1_conv1',
 num_content_layers = len(content_layers)
 num_style_layers = len(style_layers)
 
-def main():
-    #enabling eager execution
-    enableEagerExecution()
+
+
+def main_init():
+
 
     #configure the plt
     plt.figure(figsize=(10, 10))
@@ -66,7 +71,7 @@ def enableEagerExecution():
 
 
 def load_img(path_to_img):
-    max_dim = 512.0
+    max_dim = 1000.0
     img = Image.open(path_to_img)
     long = max(img.size)
     scale = max_dim / long
@@ -255,9 +260,19 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     max_vals = 255 - norm_means
 
 
-
     imgs=[]
-    for i in range(num_iterations):
+    grads, all_loss = compute_grads(cfg)
+    loss, style_score, content_score = all_loss
+    opt.apply_gradients([(grads, init_image)])
+    clipped = tf.clip_by_value(init_image, min_vals, max_vals)
+
+    text_file = open('variables.txt','w')
+    pickle.dump(clipped,text_file)
+    text_file.close()
+    init_image.assign(clipped)
+    end_time = time.time()
+
+    for i in range(num_iterations-1):
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
@@ -278,6 +293,8 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             imgs.append(plot_img)
             IPython.display.clear_output(wait=True)
             IPython.display.display_png(Image.fromarray(plot_img))
+            Image.fromarray(plot_img).show()
+
             print('Iteration: {}'.format(i))
             print('Total loss: {:.4e}, '
                   'style loss: {:.4e}, '
@@ -286,6 +303,11 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
+
+    text_file = open('variables.txt', 'w')
+    pickle.dump(clipped, text_file)
+    text_file.close()
+
     IPython.display.clear_output(wait=True)
     plt.figure(figsize=(14, 4))
     for i, img in enumerate(imgs):
@@ -308,4 +330,3 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
 
 
-main()
