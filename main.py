@@ -16,7 +16,7 @@ import functools
 
 import pickle
 
-import tensorflow-gpu as tf
+import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 
 from tensorflow.python.keras.preprocessing import image as kp_image
