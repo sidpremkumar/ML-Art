@@ -296,7 +296,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             IPython.display.clear_output(wait=True)
             IPython.display.display_png(Image.fromarray(plot_img))
             Image.fromarray(plot_img).show()
-            plot_img.save('outputs/' + i)
+            #plot_img.save('outputs/' + i)
 
             print('Iteration: {}'.format(i))
             print('Total loss: {:.4e}, '
