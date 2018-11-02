@@ -1,6 +1,6 @@
 from main import *
 
 
-enableEagerExecution
+enableEagerExecution()
 
 main_init()

@@ -280,6 +280,8 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         init_image.assign(clipped)
         end_time = time.time()
         print(i)
+        print(type(loss))
+        print(type(best_loss))
         if loss < best_loss:
             #updates best loss
             best_loss = loss
