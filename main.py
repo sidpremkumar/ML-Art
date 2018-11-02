@@ -266,9 +266,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     opt.apply_gradients([(grads, init_image)])
     clipped = tf.clip_by_value(init_image, min_vals, max_vals)
 
-    text_file = open('variables.txt','w')
-    pickle.dump(clipped,text_file)
-    text_file.close()
+
     init_image.assign(clipped)
     end_time = time.time()
 
@@ -305,9 +303,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
 
-    text_file = open('variables.txt', 'w')
-    pickle.dump(clipped, text_file)
-    text_file.close()
+
 
     IPython.display.clear_output(wait=True)
     plt.figure(figsize=(14, 4))
