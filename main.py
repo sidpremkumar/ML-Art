@@ -48,8 +48,13 @@ num_style_layers = len(style_layers)
 
 
 def main_init():
+    #GPU Config 
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.4
+    session = tf.Session(config=config)
 
-
+	
     #configure the plt
     plt.figure(figsize=(10, 10))
 
@@ -280,8 +285,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         init_image.assign(clipped)
         end_time = time.time()
         print(i)
-        print(type(loss))
-        print(type(best_loss))
         if loss < best_loss:
             #updates best loss
             best_loss = loss
