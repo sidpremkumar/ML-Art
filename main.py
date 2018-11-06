@@ -7,6 +7,7 @@ mpl.rcParams['figure.figsize'] = (10,10)
 mpl.rcParams['axes.grid'] = False
 
 import numpy as np
+import tqdm
 import IPython.display
 from PIL import Image
 import time
@@ -283,15 +284,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     end_time = time.time()
     time1 = time.time()
     start_time = time.time()
-    for i in range(num_iterations-1):
-        if i != 0:
-            iteration_time = time.time() - start_time
-            print("Iteration Time: " + str(iteration_time))
-        if i % 14 == 0:
-            avg = time.time() - time1
-            eta = (num_iterations - i) * avg
-            print("ETA: " + str(eta))
-            time1 = time.time()
+    for i in tqdm(range(num_iterations-1)):
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
