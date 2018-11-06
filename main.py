@@ -232,8 +232,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
     #get the style and feature representations, for our interested layers (intermidieate)
     style_features, content_features = get_feature_representations(model, content_path, style_path)
-    print("Here:")
-    print(style_features)
+
     gram_style_features = [gram_matrix(style_feature) for style_feature in style_features]
 
     #load and process inital image, convert it
@@ -281,8 +280,13 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
     init_image.assign(clipped)
     end_time = time.time()
-
+    time1 = time.time()
     for i in range(num_iterations-1):
+        if i % 5 == 0:
+            avg = time.time - time1
+            eta = (num_iterations - i) * avg
+            print("ETA: ", eta)
+            time1 = time.time()
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
