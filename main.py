@@ -13,6 +13,9 @@ import time
 import functools
 
 
+#TODO: Figure out a way to save and write clipped variables
+
+#https://stackoverflow.com/questions/6568007/how-do-i-save-and-restore-multiple-variables-in-python
 
 import pickle
 
@@ -54,7 +57,6 @@ def main_init():
     config.gpu_options.per_process_gpu_memory_fraction = 0.4
     session = tf.Session(config=config)
 
-	
     #configure the plt
     plt.figure(figsize=(10, 10))
 
@@ -62,13 +64,14 @@ def main_init():
     content = load_img(content_path).astype('uint8')
     style = load_img(style_path).astype('uint8')
 
-    #display the images
-    plt.subplot(1, 2, 1)
-    imshow(content, 'Content Image')
-
-    plt.subplot(1, 2, 2)
-    imshow(style, 'Style Image')
-    plt.show()
+    # If Using notebook:
+    # #display the images
+    # plt.subplot(1, 2, 1)
+    # imshow(content, 'Content Image')
+    #
+    # plt.subplot(1, 2, 2)
+    # imshow(style, 'Style Image')
+    # plt.show()
     best, best_loss = driver(content_path,style_path,num_iterations=1000)
     Image.fromarray(best)
 
@@ -227,8 +230,10 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     for layer in model.layers:
         layer.trainable = False
 
-    #get the style and feature prepresentations, for our interested layers (intermidieate)
+    #get the style and feature representations, for our interested layers (intermidieate)
     style_features, content_features = get_feature_representations(model, content_path, style_path)
+    print("Here:")
+    print(style_feature)
     gram_style_features = [gram_matrix(style_feature) for style_feature in style_features]
 
     #load and process inital image, convert it
