@@ -3,7 +3,8 @@ from main import *
 
 enableEagerExecution()
 
-main_init()
+def main():
+    main_init()
 
 if __name__ == '__main__':
     main_init()

@@ -1,4 +1,4 @@
-from driver import main_init
+from driver import main
 from flask import Flask, Response, render_template, request, redirect, send_file
 from werkzeug import secure_filename
 import time as time
@@ -52,7 +52,7 @@ def progress():
         #     x = x + 10
         #     time.sleep(0.2)
         #     yield "data:" + str(x) + "\n\n"
-        main_init()
+        main()
     return Response(generate(), mimetype= 'text/event-stream')
 
 
