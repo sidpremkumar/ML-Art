@@ -17,12 +17,12 @@ def get_file(filename):  # pragma: no cover
     except IOError as exc:
         return str(exc)
 
-@app.route('/')
+@app.route('')
 def index():
     content = get_file('web/index.html')
     return Response(content, mimetype="text/html")
 
-@app.route('/render/<id>')
+@app.route('render/<id>')
 def render(id):
     print(id)
     content = get_file('web/render.html')
@@ -30,7 +30,7 @@ def render(id):
 
 
 
-@app.route('/uploader', methods=['GET', 'POST'])
+@app.route('uploader', methods=['GET', 'POST'])
 def uploadr_file():
     if request.method == 'POST':
         f = request.files['file']
@@ -39,11 +39,11 @@ def uploadr_file():
 
 
 
-@app.route('/page')
+@app.route('page')
 def get_page():
     return send_file('web/progress.html')
 
-@app.route('/progress')
+@app.route('progress')
 def progress():
     def generate():
         # x = 0
@@ -57,4 +57,4 @@ def progress():
 
 
 if __name__ == '__main__':
-    app.run(debug=True,host='192.168.0.84')
+    app.run()
