@@ -297,8 +297,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
         init_image.assign(clipped)
         end_time = time.time()
-
-        print(iteration_time)
         if loss < best_loss:
             #updates best loss
             best_loss = loss
