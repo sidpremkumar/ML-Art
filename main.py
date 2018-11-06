@@ -281,11 +281,15 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     init_image.assign(clipped)
     end_time = time.time()
     time1 = time.time()
+    start_time = time.time()
     for i in range(num_iterations-1):
-        if i % 5 == 0:
+        if i != 0:
+            iteration_time = time.time() - start_time
+            print("Iteration Time: " + iteration_time)
+        if i % 14 == 0:
             avg = time.time() - time1
             eta = (num_iterations - i) * avg
-            print("ETA: ", eta)
+            print("ETA: " + eta)
             time1 = time.time()
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
@@ -293,7 +297,8 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
         init_image.assign(clipped)
         end_time = time.time()
-        print(i)
+
+        print(iteration_time)
         if loss < best_loss:
             #updates best loss
             best_loss = loss
@@ -307,14 +312,16 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             imgs.append(plot_img)
             IPython.display.clear_output(wait=True)
             IPython.display.display_png(Image.fromarray(plot_img))
-            Image.fromarray(plot_img).show()
-            #plot_img.save('outputs/' + i)
-
-            print('Iteration: {}'.format(i))
-            print('Total loss: {:.4e}, '
-                  'style loss: {:.4e}, '
-                  'content loss: {:.4e}, '
-                  'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
+            final_image = Image.fromarray(plot_img)
+            #Show the image
+            final_image.show()
+            #Save the image
+            final_image.save('outputs/' + i)
+            #print('Iteration: {}'.format(i))
+            #print('Total loss: {:.4e}, '
+            #      'style loss: {:.4e}, '
+            #      'content loss: {:.4e}, '
+            #      'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
 
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
