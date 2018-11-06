@@ -285,6 +285,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     time1 = time.time()
     start_time = time.time()
     for i in tqdm(range(num_iterations-1)):
+        yield "data:" + str(i) + "\n\n"
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
