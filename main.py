@@ -283,7 +283,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     time1 = time.time()
     for i in range(num_iterations-1):
         if i % 5 == 0:
-            avg = time.time - time1
+            avg = time.time() - time1
             eta = (num_iterations - i) * avg
             print("ETA: ", eta)
             time1 = time.time()
