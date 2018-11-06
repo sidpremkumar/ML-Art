@@ -285,11 +285,11 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     for i in range(num_iterations-1):
         if i != 0:
             iteration_time = time.time() - start_time
-            print("Iteration Time: " + iteration_time)
+            print("Iteration Time: " + str(iteration_time))
         if i % 14 == 0:
             avg = time.time() - time1
             eta = (num_iterations - i) * avg
-            print("ETA: " + eta)
+            print("ETA: " + str(eta))
             time1 = time.time()
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
