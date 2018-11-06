@@ -7,7 +7,7 @@ mpl.rcParams['figure.figsize'] = (10,10)
 mpl.rcParams['axes.grid'] = False
 
 import numpy as np
-import tqdm
+from tqdm import tqdm
 import IPython.display
 from PIL import Image
 import time
