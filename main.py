@@ -233,7 +233,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     #get the style and feature representations, for our interested layers (intermidieate)
     style_features, content_features = get_feature_representations(model, content_path, style_path)
     print("Here:")
-    print(style_feature)
+    print(style_features)
     gram_style_features = [gram_matrix(style_feature) for style_feature in style_features]
 
     #load and process inital image, convert it
