@@ -31,6 +31,7 @@ from tensorflow.python.keras import backend as K
 #Global Variables here:
 content_path = 'img/c1.jpeg'
 style_path = 'img/s1.jpg'
+style_name = 'saba_art'
 
 
 #The intermidiate layers that we are going to be looking for:
@@ -314,7 +315,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             #Show the image
             final_image.show()
             #Save the image
-            final_image.save('outputs/' + str(style_path) + '-' + str(i) + '.bmp')
+            final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
             #print('Iteration: {}'.format(i))
             #print('Total loss: {:.4e}, '
             #      'style loss: {:.4e}, '
