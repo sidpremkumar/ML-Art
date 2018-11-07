@@ -329,4 +329,4 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         plt.xticks([])
         plt.yticks([])
 
-    #return best_img, best_loss
+    return best_img, best_loss
