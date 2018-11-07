@@ -30,9 +30,9 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 #Global Variables here:
-content_path = 'img/c1.jpeg'
+content_path = 'img/c2.jpeg'
 style_path = 'img/s1.jpg'
-style_name = 'saba_art'
+style_name = 'deep_dream'
 
 
 #The intermidiate layers that we are going to be looking for:
@@ -53,7 +53,7 @@ num_style_layers = len(style_layers)
 
 
 def main_init():
-    #GPU Config 
+    #GPU Config
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.gpu_options.per_process_gpu_memory_fraction = 0.4
@@ -330,16 +330,3 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         plt.yticks([])
 
     #return best_img, best_loss
-
-
-
-
-
-
-
-
-
-
-
-
-
