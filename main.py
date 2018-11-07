@@ -1,9 +1,11 @@
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib as mpl
-mpl.rcParams['figure.figsize'] = (10,10)
+
+mpl.rcParams['figure.figsize'] = (10, 10)
 mpl.rcParams['axes.grid'] = False
 
 import numpy as np
@@ -13,10 +15,9 @@ from PIL import Image
 import time
 import functools
 
+# TODO: Figure out a way to save and write clipped variables
 
-#TODO: Figure out a way to save and write clipped variables
-
-#https://stackoverflow.com/questions/6568007/how-do-i-save-and-restore-multiple-variables-in-python
+# https://stackoverflow.com/questions/6568007/how-do-i-save-and-restore-multiple-variables-in-python
 
 import pickle
 
@@ -29,18 +30,15 @@ from tensorflow.python.keras import losses
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
-#Global Variables here:
+# Global Variables here:
 content_path = 'img/c2.jpeg'
 style_path = 'img/s1.jpg'
 style_name = 'deep_dream'
-#Size of cropped image
+# Size of cropped image
 SIZE = 1000
 TRAINABLE = False
 
-
-
-
-#The intermidiate layers that we are going to be looking for:
+# The intermidiate layers that we are going to be looking for:
 # Content layer where will pull our feature maps
 content_layers = ['block5_conv2']
 
@@ -50,15 +48,14 @@ style_layers = ['block1_conv1',
                 'block3_conv1',
                 'block4_conv1',
                 'block5_conv1'
-               ]
+                ]
 
 num_content_layers = len(content_layers)
 num_style_layers = len(style_layers)
 
 
-
 def main_init():
-    #GPU Config
+    # GPU Config
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     config.gpu_options.per_process_gpu_memory_fraction = 0.4
@@ -80,8 +77,9 @@ def main_init():
     # imshow(style, 'Style Image')
     # plt.show() --- best,
 
-    best, best_loss = driver(content_path,style_path,num_iterations=1000)
+    best, best_loss = driver(content_path, style_path, num_iterations=1000)
     Image.fromarray(best)
+
 
 def enableEagerExecution():
     tf.enable_eager_execution()
@@ -89,7 +87,7 @@ def enableEagerExecution():
 
 
 def load_img(path_to_img):
-    max_dim = 1000
+    max_dim = SIZE
     img = Image.open(path_to_img)
     long = max(img.size)
     scale = max_dim / long
@@ -103,26 +101,27 @@ def load_img(path_to_img):
     return img
 
 
-
 def imshow(img, title=None):
-  # Remove the batch dimension
-  out = np.squeeze(img, axis=0)
-  # Normalize for display
-  out = out.astype('uint8')
-  plt.imshow(out)
-  if title is not None:
-      plt.title(title)
-  plt.imshow(out)
+    # Remove the batch dimension
+    out = np.squeeze(img, axis=0)
+    # Normalize for display
+    out = out.astype('uint8')
+    plt.imshow(out)
+    if title is not None:
+        plt.title(title)
+    plt.imshow(out)
+
 
 def load_and_process_img(path_to_img):
-  #we want to load and preprocess our images
-  #we will follow the VGG training method
-  img = load_img(path_to_img)
+    # we want to load and preprocess our images
+    # we will follow the VGG training method
+    img = load_img(path_to_img)
 
-  #Guarentees compatabilty of the image
-  #Adequare image to the format the model requires (bc the model will look at multiple dimension)
-  img = tf.keras.applications.vgg19.preprocess_input(img)
-  return img
+    # Guarentees compatabilty of the image
+    # Adequare image to the format the model requires (bc the model will look at multiple dimension)
+    img = tf.keras.applications.vgg19.preprocess_input(img)
+    return img
+
 
 def deprocess_img(processed_img):
     x = processed_img.copy()
@@ -142,75 +141,76 @@ def deprocess_img(processed_img):
     x = np.clip(x, 0, 255).astype('uint8')
     return x
 
-def get_model():
-    #Actually creating the VCG19 model
-    #we will access intermidiate layers
 
-    #actually load the download the model
+def get_model():
+    # Actually creating the VCG19 model
+    # we will access intermidiate layers
+
+    # actually load the download the model
     vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
 
-    #set it's trainability
+    # set it's trainability
     vgg.trainable = TRAINABLE
 
-    #Get corresponding intermiditate layer
+    # Get corresponding intermiditate layer
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
     print("Style_outputs type", type(style_outputs))
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
     model_outputs = style_outputs + content_outputs
 
-    #return and build the model
-    #from documentation:
-    #model = Model(inputs=[a1, a2], outputs=[b1, b2, b3])
+    # return and build the model
+    # from documentation:
+    # model = Model(inputs=[a1, a2], outputs=[b1, b2, b3])
     return models.Model(vgg.input, model_outputs)
 
 
-
-
-
-
-def get_content_loss(base_content,target):
-    #if we think of the base content as p (with x-y-z) and target as x (with x-y-z)
-    #then this function is returning the equlicdian distance between the two
+def get_content_loss(base_content, target):
+    # if we think of the base content as p (with x-y-z) and target as x (with x-y-z)
+    # then this function is returning the equlicdian distance between the two
     return tf.reduce_mean(tf.square(base_content - target))
 
+
 def gram_matrix(input_tensor):
-    #returning a gram matrix version of the intermidiate layers
+    # returning a gram matrix version of the intermidiate layers
     channels = int(input_tensor.shape[-1])
     a = tf.reshape(input_tensor, [-1, channels])
     n = tf.shape(a)[0]
     gram = tf.matmul(a, a, transpose_a=True)
     return gram / tf.cast(n, tf.float32)
 
+
 def get_style_loss(base_style, gram_target):
-    #compares the gram matrixes of the two, one is the style image,
+    # compares the gram matrixes of the two, one is the style image,
     height, width, channels = base_style.get_shape().as_list()
     gram_style = gram_matrix(base_style)
 
     return tf.reduce_mean(tf.square(gram_style - gram_target))
 
-def get_feature_representations(model,content_path,style_path):
-    #helper function for gradient decent
-    #get the images loaded and processed,
 
-    #load and process out images [ensure that the image is compatable with VGG & return image]
+def get_feature_representations(model, content_path, style_path):
+    # helper function for gradient decent
+    # get the images loaded and processed,
+
+    # load and process out images [ensure that the image is compatable with VGG & return image]
     content_image = load_and_process_img(content_path)
     style_image = load_and_process_img(style_path)
 
-    #compute via the passed model
+    # compute via the passed model
     style_outputs = model(style_image)
     content_outputs = model(content_image)
 
-    #get the style and content feature representation from out model
+    # get the style and content feature representation from out model
     style_features = [style_layer[0] for style_layer in style_outputs[:num_style_layers]]
     content_features = [content_layer[0] for content_layer in content_outputs[num_style_layers:]]
     return style_features, content_features
 
-def compute_loss(model, loss_weights,init_image,gram_style_features,content_features):
-    #returns the total loss, stlye loss, content loss, and total variational loss
+
+def compute_loss(model, loss_weights, init_image, gram_style_features, content_features):
+    # returns the total loss, stlye loss, content loss, and total variational loss
 
     style_weight, content_weight = loss_weights
 
-    #pass in our pre-processed image into the model
+    # pass in our pre-processed image into the model
     model_outputs = model(init_image)
 
     style_output_features = model_outputs[:num_style_layers]
@@ -230,10 +230,10 @@ def compute_loss(model, loss_weights,init_image,gram_style_features,content_feat
     style_score *= style_weight
     content_score *= content_weight
 
-
-    #get total loss
+    # get total loss
     loss = style_score + content_score
     return loss, style_score, content_score
+
 
 def compute_grads(cfg):
     with tf.GradientTape() as tape:
@@ -242,29 +242,30 @@ def compute_grads(cfg):
     total_loss = all_loss[0]
     return tape.gradient(total_loss, cfg['init_image']), all_loss
 
-def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_weight=1e-2):
-    #we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
+
+def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, style_weight=1e-2):
+    # we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
     model = get_model()
     for layer in model.layers:
         layer.trainable = False
 
-    #get the style and feature representations, for our interested layers (intermidieate)
+    # get the style and feature representations, for our interested layers (intermidieate)
     style_features, content_features = get_feature_representations(model, content_path, style_path)
 
     gram_style_features = [gram_matrix(style_feature) for style_feature in style_features]
 
-    #load and process inital image, convert it
+    # load and process inital image, convert it
     init_image = load_and_process_img(content_path)
     init_image = tfe.Variable(init_image, dtype=tf.float32)
 
-    #create our optimizer
+    # create our optimizer
     opt = tf.train.AdamOptimizer(learning_rate=5, beta1=0.99, epsilon=1e-1)
 
-    #tracker for displaying intermediate images
+    # tracker for displaying intermediate images
 
     iter_count = 1
 
-    #store out best result
+    # store out best result
     best_loss, best_img = float('inf'), None
 
     loss_weights = (style_weight, content_weight)
@@ -276,29 +277,28 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         'content_features': content_features
     }
 
-    #for displaying
+    # for displaying
     num_rows = 2
     num_cols = 5
     display_interval = num_iterations / (num_rows * num_cols)
     start_time = time.time()
     global_start = time.time()
 
-    #what we want to normilize the mean around
+    # what we want to normilize the mean around
     norm_means = np.array([103.939, 116.779, 123.68])
     min_vals = -norm_means
     max_vals = 255 - norm_means
-    imgs=[]
+    imgs = []
     grads, all_loss = compute_grads(cfg)
     loss, style_score, content_score = all_loss
     opt.apply_gradients([(grads, init_image)])
     clipped = tf.clip_by_value(init_image, min_vals, max_vals)
 
-
     init_image.assign(clipped)
     end_time = time.time()
     time1 = time.time()
     start_time = time.time()
-    for i in tqdm(range(num_iterations-1)):
+    for i in tqdm(range(num_iterations - 1)):
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
@@ -306,7 +306,7 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         init_image.assign(clipped)
         end_time = time.time()
         if loss < best_loss:
-            #updates best loss
+            # updates best loss
             best_loss = loss
             best_img = deprocess_img(init_image.numpy())
         if i % display_interval == 0:
@@ -318,12 +318,12 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             IPython.display.clear_output(wait=True)
             IPython.display.display_png(Image.fromarray(plot_img))
             final_image = Image.fromarray(plot_img)
-            #Show the image
+            # Show the image
             final_image.show()
-            #Save the image
+            # Save the image
             final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
-            #print('Iteration: {}'.format(i))
-            #print('Total loss: {:.4e}, '
+            # print('Iteration: {}'.format(i))
+            # print('Total loss: {:.4e}, '
             #      'style loss: {:.4e}, '
             #      'content loss: {:.4e}, '
             #      'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
