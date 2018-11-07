@@ -90,11 +90,11 @@ def load_img(path_to_img):
     max_dim = SIZE
     img = Image.open(path_to_img)
     # long
-    x = max(img.size) 
+    x = max(img.size)
     scale = (max_dim / x)
     width, height = img.size
     print(max_dim)
-    print(longg)
+    print(x)
     print(scale)
 
     # scale and resize the images, so that they are the same
