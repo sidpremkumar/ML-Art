@@ -327,4 +327,5 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         plt.yticks([])
 
     print("Done!")
+    yield error 
     return best_img, best_loss
