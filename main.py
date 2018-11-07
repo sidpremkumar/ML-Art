@@ -287,7 +287,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     time1 = time.time()
     start_time = time.time()
     for i in tqdm(range(num_iterations-1)):
-        yield "data:" + str(i) + "\n\n"
         grads, all_loss = compute_grads(cfg)
         loss, style_score, content_score = all_loss
         opt.apply_gradients([(grads, init_image)])
@@ -300,7 +299,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             best_img = deprocess_img(init_image.numpy())
         if i % display_interval == 0:
             start_time = time.time()
-
             # Use the .numpy() method to get the concrete numpy array
             plot_img = init_image.numpy()
             plot_img = deprocess_img(plot_img)
@@ -317,8 +315,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
             #      'style loss: {:.4e}, '
             #      'content loss: {:.4e}, '
             #      'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
-
-
     print('Total time: {:.4f}s'.format(time.time() - global_start))
     IPython.display.clear_output(wait=True)
     plt.figure(figsize=(14, 4))
@@ -329,5 +325,4 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         plt.yticks([])
 
     print("Done!")
-    yield error
-    #return best_img, best_loss
+    return best_img, best_loss
