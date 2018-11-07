@@ -308,10 +308,10 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         'content_features': content_features
     }
 
-    # IPython content:
+
     # # for displaying
-    # num_rows = 2
-    # num_cols = 5
+    num_rows = 2
+    num_cols = 5
 
     display_interval = num_iterations / (num_rows * num_cols)
     start_time = time.time()
