@@ -34,6 +34,9 @@ content_path = 'img/c2.jpeg'
 style_path = 'img/s1.jpg'
 style_name = 'deep_dream'
 
+bestimg_g
+bestloss_g
+
 
 #The intermidiate layers that we are going to be looking for:
 # Content layer where will pull our feature maps
@@ -73,9 +76,9 @@ def main_init():
     #
     # plt.subplot(1, 2, 2)
     # imshow(style, 'Style Image')
-    # plt.show()
-    best, best_loss = driver(content_path,style_path,num_iterations=1000)
-    Image.fromarray(best)
+    # plt.show() --- best, best_loss =
+    driver(content_path,style_path,num_iterations=1000)
+    Image.fromarray(bestimg_g)
 
 def enableEagerExecution():
     tf.enable_eager_execution()
@@ -327,5 +330,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         plt.yticks([])
 
     print("Done!")
-    yield error 
-    return best_img, best_loss
+    yield error
+    bestimg_g = best_img
+    bestloss_g = best_loss
