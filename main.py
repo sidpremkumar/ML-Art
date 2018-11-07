@@ -150,7 +150,7 @@ def get_model():
     vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
 
     # set it's trainability
-    #False
+    #False in order to get the layers we are interested in
     vgg.trainable = TRAINABLE
 
     #from docs:
@@ -161,23 +161,29 @@ def get_model():
     #Get corresponding intermiditate layer
     #This is why we need to enable eager execution
     #style layers that we are interested in, global variable
-    #We get these tensors, and evaluate them to get a result
+    #We get these tensors,
+    # Note: evaluate them to get a result
 
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
 
-    print("Style_outputs type", type(style_outputs[0]))
-    print(style_outputs[0])
+    # print("Style_outputs type", type(style_outputs[0]))
+    # print(style_outputs[0])
     output = vgg.get_layer('block1_conv1').output
     print output
     #content layers we are interested in, global variable
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
 
+    #TODO: Average insted of adding
+    #averaged = keras.layers.average()([style+_output, content_outputs])
 
     model_outputs = style_outputs + content_outputs
-
+    print("model_outputs")
+    print(type(model_outputs))
     # return and build the model
     # from documentation:
     # model = Model(inputs=[a1, a2], outputs=[b1, b2, b3])
+    # Train the model with the vgg input
+    # set the output to be the ones produced by the style+picture
     return models.Model(vgg.input, model_outputs)
 
 
