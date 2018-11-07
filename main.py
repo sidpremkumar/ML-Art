@@ -34,8 +34,8 @@ content_path = 'img/c2.jpeg'
 style_path = 'img/s1.jpg'
 style_name = 'deep_dream'
 
-bestimg_g
-bestloss_g
+bestimg_g = null
+bestloss_g = null 
 
 
 #The intermidiate layers that we are going to be looking for:
