@@ -93,10 +93,6 @@ def load_img(path_to_img):
     x = max(img.size)
     scale = float(float(max_dim) / float(x))
     width, height = img.size
-    print(max_dim)
-    print(x)
-    print(scale)
-
     # scale and resize the images, so that they are the same
     img = img.resize((int(width * scale), int(height * scale)), Image.ANTIALIAS)
     img = kp_image.img_to_array(img)
@@ -158,7 +154,7 @@ def get_model():
 
     # Get corresponding intermiditate layer
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
-    print("Style_outputs type", type(style_outputs))
+    print("Style_outputs type", type(style_outputs[0]))
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
     model_outputs = style_outputs + content_outputs
 
