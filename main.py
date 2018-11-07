@@ -33,6 +33,9 @@ from tensorflow.python.keras import backend as K
 content_path = 'img/c2.jpeg'
 style_path = 'img/s1.jpg'
 style_name = 'deep_dream'
+#Size of cropped image
+SIZE = 1000
+TRAINABLE = False
 
 
 
@@ -61,12 +64,12 @@ def main_init():
     config.gpu_options.per_process_gpu_memory_fraction = 0.4
     session = tf.Session(config=config)
 
-    #configure the plt
-    plt.figure(figsize=(10, 10))
-
-    #load content and style images
-    content = load_img(content_path).astype('uint8')
-    style = load_img(style_path).astype('uint8')
+    # #configure the plt
+    # plt.figure(figsize=(10, 10))
+    #
+    # #load content and style images
+    # content = load_img(content_path).astype('uint8')
+    # style = load_img(style_path).astype('uint8')
 
     # If Using notebook:
     # #display the images
@@ -75,9 +78,10 @@ def main_init():
     #
     # plt.subplot(1, 2, 2)
     # imshow(style, 'Style Image')
-    # plt.show() --- best, best_loss =
-    driver(content_path,style_path,num_iterations=1000)
-    #Image.fromarray(best)
+    # plt.show() --- best,
+
+    best, best_loss = driver(content_path,style_path,num_iterations=1000)
+    Image.fromarray(best)
 
 def enableEagerExecution():
     tf.enable_eager_execution()
@@ -85,7 +89,7 @@ def enableEagerExecution():
 
 
 def load_img(path_to_img):
-    max_dim = 1000.0
+    max_dim = SIZE
     img = Image.open(path_to_img)
     long = max(img.size)
     scale = max_dim / long
@@ -114,6 +118,9 @@ def load_and_process_img(path_to_img):
   #we want to load and preprocess our images
   #we will follow the VGG training method
   img = load_img(path_to_img)
+
+  #Guarentees compatabilty of the image
+  #Adequare image to the format the model requires (bc the model will look at multiple dimension)
   img = tf.keras.applications.vgg19.preprocess_input(img)
   return img
 
@@ -138,15 +145,22 @@ def deprocess_img(processed_img):
 def get_model():
     #Actually creating the VCG19 model
     #we will access intermidiate layers
+
+    #actually load the download the model
     vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
-    vgg.trainable = False
+
+    #set it's trainability
+    vgg.trainable = TRAINABLE
 
     #Get corresponding intermiditate layer
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
+    print("Style_outputs type", type(style_outputs))
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
     model_outputs = style_outputs + content_outputs
 
     #return and build the model
+    #from documentation:
+    #model = Model(inputs=[a1, a2], outputs=[b1, b2, b3])
     return models.Model(vgg.input, model_outputs)
 
 
@@ -178,7 +192,7 @@ def get_feature_representations(model,content_path,style_path):
     #helper function for gradient decent
     #get the images loaded and processed,
 
-    #load and process out images
+    #load and process out images [ensure that the image is compatable with VGG & return image]
     content_image = load_and_process_img(content_path)
     style_image = load_and_process_img(style_path)
 
@@ -273,8 +287,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
     norm_means = np.array([103.939, 116.779, 123.68])
     min_vals = -norm_means
     max_vals = 255 - norm_means
-
-
     imgs=[]
     grads, all_loss = compute_grads(cfg)
     loss, style_score, content_score = all_loss
