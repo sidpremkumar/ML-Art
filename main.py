@@ -76,8 +76,8 @@ def main_init():
     # plt.subplot(1, 2, 2)
     # imshow(style, 'Style Image')
     # plt.show() --- best, best_loss =
-    best, best_loss = driver(content_path,style_path,num_iterations=1000)
-    Image.fromarray(best)
+    driver(content_path,style_path,num_iterations=1000)
+    #Image.fromarray(best)
 
 def enableEagerExecution():
     tf.enable_eager_execution()
@@ -330,4 +330,4 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
     print("Done!")
     yield error
-    return best_img, best_loss
+    #return best_img, best_loss
