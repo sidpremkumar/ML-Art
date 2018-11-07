@@ -94,6 +94,7 @@ def load_img(path_to_img):
     width, height = img.size
     print(max_dim)
     print(longg)
+    print(scale)
 
     # scale and resize the images, so that they are the same
     img = img.resize((int(width * scale), int(height * scale)), Image.ANTIALIAS)
