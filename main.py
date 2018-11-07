@@ -150,11 +150,25 @@ def get_model():
     vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
 
     # set it's trainability
+    #False
     vgg.trainable = TRAINABLE
 
-    # Get corresponding intermiditate layer
+    #from docs:
+    #Tensor programs work by first building a graph of tf.Tensor objects, detailing how each
+    #tensor is computed based on the other available tensors and then by running
+    #parts of this graph to achieve the desired results.
+
+    #Get corresponding intermiditate layer
+    #This is why we need to enable eager execution
+    #style layers that we are interested in, global variable
+    #We get these tensors, and evaluate them to get a result
+
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
+
     print("Style_outputs type", type(style_outputs[0]))
+    print(style_outputs[0].output)
+
+    #content layers we are interested in, global variable
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
     model_outputs = style_outputs + content_outputs
 
