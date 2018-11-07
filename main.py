@@ -91,7 +91,7 @@ def load_img(path_to_img):
     img = Image.open(path_to_img)
     # long
     x = max(img.size)
-    scale = (max_dim / x)
+    scale = float(max_dim / x)
     width, height = img.size
     print(max_dim)
     print(x)
