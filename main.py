@@ -89,7 +89,7 @@ def enableEagerExecution():
 
 
 def load_img(path_to_img):
-    max_dim = SIZE
+    max_dim = 1000
     img = Image.open(path_to_img)
     long = max(img.size)
     scale = max_dim / long
