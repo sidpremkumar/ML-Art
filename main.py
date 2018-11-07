@@ -168,8 +168,8 @@ def get_model():
 
     # print("Style_outputs type", type(style_outputs[0]))
     # print(style_outputs[0])
-    output = vgg.get_layer('block1_conv1').output
-    print output
+    # output = vgg.get_layer('block1_conv1').output
+    # print output
     #content layers we are interested in, global variable
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
 
@@ -219,7 +219,8 @@ def get_feature_representations(model, content_path, style_path):
     # compute via the passed model
     style_outputs = model(style_image)
     content_outputs = model(content_image)
-
+    print("HERE")
+    print(type(content_outputs))
     # get the style and content feature representation from out model
     style_features = [style_layer[0] for style_layer in style_outputs[:num_style_layers]]
     content_features = [content_layer[0] for content_layer in content_outputs[num_style_layers:]]
@@ -267,7 +268,7 @@ def compute_grads(cfg):
 def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, style_weight=1e-2):
     # we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
     model = get_model()
-    print(type(model))
+    #disable training in the model
     for layer in model.layers:
         layer.trainable = False
 
