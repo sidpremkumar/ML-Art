@@ -89,10 +89,11 @@ def enableEagerExecution():
 def load_img(path_to_img):
     max_dim = SIZE
     img = Image.open(path_to_img)
-    long = max(img.size)
-    scale = max_dim / long
+    longg = max(img.size)
+    scale = max_dim / longg
     width, height = img.size
-    print(scale)
+    print(max_dim)
+    print(longg)
 
     # scale and resize the images, so that they are the same
     img = img.resize((int(width * scale), int(height * scale)), Image.ANTIALIAS)
