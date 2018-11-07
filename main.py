@@ -167,8 +167,8 @@ def get_model():
 
     print("Style_outputs type", type(style_outputs[0]))
     print(style_outputs[0])
-    style_outputs.keras.layers
-
+    output = vgg.get_layer('block1_conv1').output
+    print output
     #content layers we are interested in, global variable
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
 
