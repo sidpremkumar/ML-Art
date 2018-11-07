@@ -204,7 +204,8 @@ def get_style_loss(base_style, gram_target):
     # compares the gram matrixes of the two, one is the style image,
     height, width, channels = base_style.get_shape().as_list()
     gram_style = gram_matrix(base_style)
-
+    #reduce mean goes from a layer with n nodes -> n-1 nodes
+    #square, squares the resulting tensor.
     return tf.reduce_mean(tf.square(gram_style - gram_target))
 
 
@@ -219,15 +220,19 @@ def get_feature_representations(model, content_path, style_path):
     # compute via the passed model
     style_outputs = model(style_image)
     content_outputs = model(content_image)
-    print("HERE")
-    print(type(content_outputs))
+    #output is list
+
     # get the style and content feature representation from out model
     style_features = [style_layer[0] for style_layer in style_outputs[:num_style_layers]]
+
     content_features = [content_layer[0] for content_layer in content_outputs[num_style_layers:]]
+
+
     return style_features, content_features
 
 
 def compute_loss(model, loss_weights, init_image, gram_style_features, content_features):
+
     # returns the total loss, stlye loss, content loss, and total variational loss
 
     style_weight, content_weight = loss_weights
@@ -273,12 +278,15 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         layer.trainable = False
 
     # get the style and feature representations, for our interested layers (intermidieate)
+    #put the pictures through the model, get the output of the layers we are interested in
     style_features, content_features = get_feature_representations(model, content_path, style_path)
 
+    #turn the output in gram style feature
     gram_style_features = [gram_matrix(style_feature) for style_feature in style_features]
 
     # load and process inital image, convert it
     init_image = load_and_process_img(content_path)
+    # make the image into a tensor
     init_image = tfe.Variable(init_image, dtype=tf.float32)
 
     # create our optimizer
@@ -288,7 +296,7 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
 
     iter_count = 1
 
-    # store out best result
+    # store out best result, initilize variables here
     best_loss, best_img = float('inf'), None
 
     loss_weights = (style_weight, content_weight)
@@ -300,24 +308,30 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         'content_features': content_features
     }
 
-    # for displaying
-    num_rows = 2
-    num_cols = 5
+    # IPython content:
+    # # for displaying
+    # num_rows = 2
+    # num_cols = 5
+
     display_interval = num_iterations / (num_rows * num_cols)
     start_time = time.time()
     global_start = time.time()
 
-    # what we want to normilize the mean around
+    # what we want to normilize the mean around, this is what the VGG networks are trained on
     norm_means = np.array([103.939, 116.779, 123.68])
     min_vals = -norm_means
     max_vals = 255 - norm_means
     imgs = []
     grads, all_loss = compute_grads(cfg)
     loss, style_score, content_score = all_loss
+
+    #apply adam optimization
     opt.apply_gradients([(grads, init_image)])
+    #clipped is the init_image tensors clipped by min/max
     clipped = tf.clip_by_value(init_image, min_vals, max_vals)
 
     init_image.assign(clipped)
+    print(type(init_image))
     end_time = time.time()
     time1 = time.time()
     start_time = time.time()
