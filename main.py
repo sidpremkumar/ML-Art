@@ -166,10 +166,13 @@ def get_model():
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
 
     print("Style_outputs type", type(style_outputs[0]))
-    print(style_outputs[0].output)
+    print(style_outputs[0])
+    style_outputs.keras.layers
 
     #content layers we are interested in, global variable
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
+
+
     model_outputs = style_outputs + content_outputs
 
     # return and build the model
