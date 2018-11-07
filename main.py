@@ -318,9 +318,6 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
 
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
-
-
-
     IPython.display.clear_output(wait=True)
     plt.figure(figsize=(14, 4))
     for i, img in enumerate(imgs):
@@ -329,4 +326,5 @@ def driver(content_path,style_path,num_iterations=1000,content_weight=1e3,style_
         plt.xticks([])
         plt.yticks([])
 
+    print("Done!")
     return best_img, best_loss
