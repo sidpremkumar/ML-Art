@@ -31,7 +31,7 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-content_path = 'img/c3.jpeg'
+content_path = 'img/c3.jpg'
 style_path = 'img/s3.jpg'
 style_name = 'rick'
 # Size of cropped image
@@ -381,7 +381,7 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         plt.xticks([])
         plt.yticks([])
 
-    
+
 
     print("Done!")
     return best_img, best_loss
