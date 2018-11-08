@@ -382,3 +382,6 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
 
     print("Done!")
     return best_img, best_loss
+
+if __name__ == "__main__":
+    main_init()
