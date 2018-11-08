@@ -1,4 +1,4 @@
-from main import *
+from neutral_style_transfer import *
 
 
 enableEagerExecution()

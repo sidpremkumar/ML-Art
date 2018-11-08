@@ -177,6 +177,7 @@ def get_model():
     #averaged = keras.layers.average()([style+_output, content_outputs])
 
     model_outputs = style_outputs + content_outputs
+
     # return and build the model
     # from documentation:
     # model = Model(inputs=[a1, a2], outputs=[b1, b2, b3])
@@ -232,34 +233,44 @@ def get_feature_representations(model, content_path, style_path):
 
 
 def compute_loss(model, loss_weights, init_image, gram_style_features, content_features):
+    print("HERE!")
+    print(model.get_weights())
+
+
+
 
     # returns the total loss, stlye loss, content loss, and total variational loss
 
-    style_weight, content_weight = loss_weights
+    #style_weight, content_weight = loss_weights
 
     # pass in our pre-processed image into the model
-    model_outputs = model(init_image)
+    # with the vgg as input, and our image as outputs
+    # only getting back the layers we are interested in
 
-    style_output_features = model_outputs[:num_style_layers]
-    content_output_features = model_outputs[num_style_layers:]
 
-    style_score = 0
-    content_score = 0
 
-    weight_per_style_layer = 1.0 / float(num_style_layers)
-    for target_style, comb_style in zip(gram_style_features, style_output_features):
-        style_score += weight_per_style_layer * get_style_loss(comb_style[0], target_style)
-
-    weight_per_content_layer = 1.0 / float(num_content_layers)
-    for target_content, comb_content in zip(content_features, content_output_features):
-        content_score += weight_per_content_layer * get_content_loss(comb_content[0], target_content)
-
-    style_score *= style_weight
-    content_score *= content_weight
-
-    # get total loss
-    loss = style_score + content_score
-    return loss, style_score, content_score
+    # model_outputs = model(init_image)
+    #
+    # style_output_features = model_outputs[:num_style_layers]
+    # content_output_features = model_outputs[num_style_layers:]
+    #
+    # style_score = 0
+    # content_score = 0
+    #
+    # weight_per_style_layer = 1.0 / float(num_style_layers)
+    # for target_style, comb_style in zip(gram_style_features, style_output_features):
+    #     style_score += weight_per_style_layer * get_style_loss(comb_style[0], target_style)
+    #
+    # weight_per_content_layer = 1.0 / float(num_content_layers)
+    # for target_content, comb_content in zip(content_features, content_output_features):
+    #     content_score += weight_per_content_layer * get_content_loss(comb_content[0], target_content)
+    #
+    # style_score *= style_weight
+    # content_score *= content_weight
+    #
+    # # get total loss
+    # loss = style_score + content_score
+    # return loss, style_score, content_score
 
 
 def compute_grads(cfg):
@@ -322,32 +333,32 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
     min_vals = -norm_means
     max_vals = 255 - norm_means
     imgs = []
+
     grads, all_loss = compute_grads(cfg)
     loss, style_score, content_score = all_loss
 
-    #apply adam optimization
-    opt.apply_gradients([(grads, init_image)])
-    #clipped is the init_image tensors clipped by min/max
-    clipped = tf.clip_by_value(init_image, min_vals, max_vals)
 
-    init_image.assign(clipped)
-    print(type(init_image))
-    end_time = time.time()
-    time1 = time.time()
-    start_time = time.time()
+    #Image in tensor form -> init_image -> whats its loss -> all_loss ->
+    # gradient decent -> change values -> pass it through the model -> whats its loss?
     for i in tqdm(range(num_iterations - 1)):
-        grads, all_loss = compute_grads(cfg)
+        # computing the next seetp in gradient decent.
         loss, style_score, content_score = all_loss
+        # computing the next seetp in gradient decent.
+        grads, all_loss = compute_grads(cfg)
+
+        # apply adam optimization - version of gradient decent
         opt.apply_gradients([(grads, init_image)])
+
+        # clipped is the init_image tensors clipped by min/max
+        # to allow to deprocessing
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
         init_image.assign(clipped)
-        end_time = time.time()
+
         if loss < best_loss:
             # updates best loss
             best_loss = loss
             best_img = deprocess_img(init_image.numpy())
         if i % display_interval == 0:
-            start_time = time.time()
             # Use the .numpy() method to get the concrete numpy array
             plot_img = init_image.numpy()
             plot_img = deprocess_img(plot_img)
@@ -359,11 +370,7 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
             final_image.show()
             # Save the image
             final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
-            # print('Iteration: {}'.format(i))
-            # print('Total loss: {:.4e}, '
-            #      'style loss: {:.4e}, '
-            #      'content loss: {:.4e}, '
-            #      'time: {:.4f}s'.format(loss, style_score, content_score, time.time() - start_time))
+
     print('Total time: {:.4f}s'.format(time.time() - global_start))
     IPython.display.clear_output(wait=True)
     plt.figure(figsize=(14, 4))
