@@ -31,9 +31,9 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-content_path = 'img/c2.jpeg'
-style_path = 'img/s1.jpg'
-style_name = 'deep_dream'
+content_path = 'img/c3.jpeg'
+style_path = 'img/s3.jpg'
+style_name = 'rick'
 # Size of cropped image
 SIZE = 1000
 TRAINABLE = False
@@ -350,7 +350,11 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         # to allow to deprocessing
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
         init_image.assign(clipped)
-
+        image = Image.fromarray(plot_img)
+        plot_img = image.numpy()
+        plot_img = deprocess_img(plot_img)
+        imgs.append(plot_img)
+        image.save('outputs/gif/' + str(style_name) + '-' + str(i) + '.bmp')
         if loss < best_loss:
             # updates best loss
             best_loss = loss
@@ -362,11 +366,11 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
             imgs.append(plot_img)
             IPython.display.clear_output(wait=True)
             IPython.display.display_png(Image.fromarray(plot_img))
-            final_image = Image.fromarray(plot_img)
+            # final_image = Image.fromarray(plot_img)
             # Show the image
-            final_image.show()
+            # final_image.show()
             # Save the image
-            final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
+            # final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
     IPython.display.clear_output(wait=True)
@@ -376,6 +380,8 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         plt.imshow(img)
         plt.xticks([])
         plt.yticks([])
+
+    
 
     print("Done!")
     return best_img, best_loss
