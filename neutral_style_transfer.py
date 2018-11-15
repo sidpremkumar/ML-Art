@@ -359,18 +359,19 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
             # updates best loss
             best_loss = loss
             best_img = deprocess_img(init_image.numpy())
-        if i % display_interval == 0:
+        #if i % display_interval == 0:
+        if True:
             # Use the .numpy() method to get the concrete numpy array
             plot_img = init_image.numpy()
             plot_img = deprocess_img(plot_img)
             imgs.append(plot_img)
-            IPython.display.clear_output(wait=True)
-            IPython.display.display_png(Image.fromarray(plot_img))
-            # final_image = Image.fromarray(plot_img)
+            # IPython.display.clear_output(wait=True)
+            # IPython.display.display_png(Image.fromarray(plot_img))
+            final_image = Image.fromarray(plot_img)
             # Show the image
             # final_image.show()
-            # Save the image
-            # final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
+            Save the image
+            final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
     IPython.display.clear_output(wait=True)
