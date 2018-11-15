@@ -1,5 +1,5 @@
 import matplotlib
-
+import sys
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -338,6 +338,8 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
     print(type(init_image))
     #Image in tensor form -> init_image -> whats its loss -> all_loss ->
     # gradient decent -> change values -> pass it through the model -> whats its loss?
+    again = True
+    while (again) {
     for i in tqdm(range(num_iterations - 1)):
         # computing the next seetp in gradient decent.
         loss, style_score, content_score = all_loss
@@ -381,6 +383,12 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         plt.imshow(img)
         plt.xticks([])
         plt.yticks([])
+    text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
+    if(text = 0){
+        again = False
+    }
+
+    }
 
 
 
