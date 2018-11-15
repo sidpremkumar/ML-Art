@@ -35,7 +35,7 @@ content_path = 'img/c3.jpg'
 style_path = 'img/s3.jpg'
 style_name = 'rick'
 # Size of cropped image
-SIZE = 1000
+SIZE = 2000
 TRAINABLE = False
 
 # The intermidiate layers that we are going to be looking for:
@@ -376,13 +376,13 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
                 final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
 
         print('Total time: {:.4f}s'.format(time.time() - global_start))
-        IPython.display.clear_output(wait=True)
-        plt.figure(figsize=(14, 4))
-        for i, img in enumerate(imgs):
-            plt.subplot(num_rows, num_cols, i + 1)
-            plt.imshow(img)
-            plt.xticks([])
-            plt.yticks([])
+        # IPython.display.clear_output(wait=True)
+        # plt.figure(figsize=(14, 4))
+        # for i, img in enumerate(imgs):
+        #     plt.subplot(num_rows, num_cols, i + 1)
+        #     plt.imshow(img)
+        #     plt.xticks([])
+        #     plt.yticks([])
         text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
         if(text == 0):
             again = False
