@@ -370,7 +370,7 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
             final_image = Image.fromarray(plot_img)
             # Show the image
             # final_image.show()
-            Save the image
+            #Save the image
             final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
 
     print('Total time: {:.4f}s'.format(time.time() - global_start))
