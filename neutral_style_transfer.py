@@ -350,9 +350,10 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
         # to allow to deprocessing
         clipped = tf.clip_by_value(init_image, min_vals, max_vals)
         init_image.assign(clipped)
-        image = Image.fromarray(plot_img)
+
         plot_img = image.numpy()
         plot_img = deprocess_img(plot_img)
+        image = Image.fromarray(plot_img)
         imgs.append(plot_img)
         image.save('outputs/gif/' + str(style_name) + '-' + str(i) + '.bmp')
         if loss < best_loss:
