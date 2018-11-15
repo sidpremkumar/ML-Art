@@ -384,7 +384,7 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
             plt.xticks([])
             plt.yticks([])
         text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
-        if(text = 0):
+        if(text == 0):
             again = False
 
 
