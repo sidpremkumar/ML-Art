@@ -339,56 +339,56 @@ def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, st
     #Image in tensor form -> init_image -> whats its loss -> all_loss ->
     # gradient decent -> change values -> pass it through the model -> whats its loss?
     again = True
-    while (again) {
-    for i in tqdm(range(num_iterations - 1)):
-        # computing the next seetp in gradient decent.
-        loss, style_score, content_score = all_loss
-        grads, all_loss = compute_grads(cfg)
+    while (again):
+        for i in tqdm(range(num_iterations - 1)):
+            # computing the next seetp in gradient decent.
+            loss, style_score, content_score = all_loss
+            grads, all_loss = compute_grads(cfg)
 
-        # apply adam optimization - version of gradient decent
-        opt.apply_gradients([(grads, init_image)])
+            # apply adam optimization - version of gradient decent
+            opt.apply_gradients([(grads, init_image)])
 
-        # clipped is the init_image tensors clipped by min/max
-        # to allow to deprocessing
-        clipped = tf.clip_by_value(init_image, min_vals, max_vals)
-        init_image.assign(clipped)
-        # image = Image.fromarray(plot_img)
-        # plot_img = image.numpy()
-        # plot_img = deprocess_img(plot_img)
-        # imgs.append(plot_img)
-        # image.save('outputs/gif/' + str(style_name) + '-' + str(i) + '.bmp')
-        if loss < best_loss:
-            # updates best loss
-            best_loss = loss
-            best_img = deprocess_img(init_image.numpy())
-        #if i % display_interval == 0:
-        if True:
-            # Use the .numpy() method to get the concrete numpy array
-            plot_img = init_image.numpy()
-            plot_img = deprocess_img(plot_img)
-            imgs.append(plot_img)
-            # IPython.display.clear_output(wait=True)
-            # IPython.display.display_png(Image.fromarray(plot_img))
-            final_image = Image.fromarray(plot_img)
-            # Show the image
-            # final_image.show()
-            # Save the image
-            final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
+            # clipped is the init_image tensors clipped by min/max
+            # to allow to deprocessing
+            clipped = tf.clip_by_value(init_image, min_vals, max_vals)
+            init_image.assign(clipped)
+            # image = Image.fromarray(plot_img)
+            # plot_img = image.numpy()
+            # plot_img = deprocess_img(plot_img)
+            # imgs.append(plot_img)
+            # image.save('outputs/gif/' + str(style_name) + '-' + str(i) + '.bmp')
+            if loss < best_loss:
+                # updates best loss
+                best_loss = loss
+                best_img = deprocess_img(init_image.numpy())
+            #if i % display_interval == 0:
+            if True:
+                # Use the .numpy() method to get the concrete numpy array
+                plot_img = init_image.numpy()
+                plot_img = deprocess_img(plot_img)
+                imgs.append(plot_img)
+                # IPython.display.clear_output(wait=True)
+                # IPython.display.display_png(Image.fromarray(plot_img))
+                final_image = Image.fromarray(plot_img)
+                # Show the image
+                # final_image.show()
+                # Save the image
+                final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
 
-    print('Total time: {:.4f}s'.format(time.time() - global_start))
-    IPython.display.clear_output(wait=True)
-    plt.figure(figsize=(14, 4))
-    for i, img in enumerate(imgs):
-        plt.subplot(num_rows, num_cols, i + 1)
-        plt.imshow(img)
-        plt.xticks([])
-        plt.yticks([])
-    text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
-    if(text = 0){
-        again = False
-    }
+        print('Total time: {:.4f}s'.format(time.time() - global_start))
+        IPython.display.clear_output(wait=True)
+        plt.figure(figsize=(14, 4))
+        for i, img in enumerate(imgs):
+            plt.subplot(num_rows, num_cols, i + 1)
+            plt.imshow(img)
+            plt.xticks([])
+            plt.yticks([])
+        text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
+        if(text = 0):
+            again = False
 
-    }
+
+
 
 
 
