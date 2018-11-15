@@ -35,7 +35,7 @@ content_path = 'img/c3.jpg'
 style_path = 'img/s3.jpg'
 style_name = 'rick'
 # Size of cropped image
-SIZE = 1500
+SIZE = 1080
 TRAINABLE = False
 
 # The intermidiate layers that we are going to be looking for:
