@@ -339,8 +339,10 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
     #Image in tensor form -> init_image -> whats its loss -> all_loss ->
     # gradient decent -> change values -> pass it through the model -> whats its loss?
     again = True
+    counter = 0
     while (again):
         for i in tqdm(range(num_iterations - 1)):
+            counter += 1
             # computing the next seetp in gradient decent.
             loss, style_score, content_score = all_loss
             grads, all_loss = compute_grads(cfg)
@@ -373,7 +375,7 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
                 # Show the image
                 # final_image.show()
                 # Save the image
-                final_image.save('outputs/' + str(style_name) + '-' + str(i) + '.bmp')
+                final_image.save('outputs/' + str(style_name) + '-' + str(counter) + '.bmp')
 
         print('Total time: {:.4f}s'.format(time.time() - global_start))
         # IPython.display.clear_output(wait=True)
