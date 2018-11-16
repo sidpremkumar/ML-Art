@@ -273,7 +273,7 @@ def compute_grads(cfg):
     return tape.gradient(total_loss, cfg['init_image']), all_loss
 
 
-def driver(content_path, style_path, num_iterations=1000, content_weight=1e3, style_weight=1e-2):
+def driver(content_path, style_path, num_iterations=10, content_weight=1e3, style_weight=1e-2):
     # we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
     model = get_model()
     #disable training in the model
