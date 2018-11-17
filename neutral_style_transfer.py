@@ -15,6 +15,9 @@ from PIL import Image
 import time
 import functools
 
+
+import pickle
+
 # TODO: Figure out a way to save and write clipped variables
 
 # https://stackoverflow.com/questions/6568007/how-do-i-save-and-restore-multiple-variables-in-python
@@ -31,9 +34,9 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-content_path = 'img/c3.jpg'
+content_path = 'img/c4.jpg'
 style_path = 'img/s3.jpg'
-style_name = 'rick'
+style_name = 'sama1'
 # Size of cropped image
 SIZE = 1080
 TRAINABLE = False
@@ -335,12 +338,11 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
     clipped = tf.clip_by_value(init_image, min_vals, max_vals)
 
     init_image.assign(clipped)
-    print(type(init_image))
     #Image in tensor form -> init_image -> whats its loss -> all_loss ->
     # gradient decent -> change values -> pass it through the model -> whats its loss?
     again = True
     counter = 0
-    while (again):
+    while (again == True):
         for i in tqdm(range(num_iterations - 1)):
             counter += 1
             # computing the next seetp in gradient decent.
@@ -367,6 +369,7 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
             if True:
                 # Use the .numpy() method to get the concrete numpy array
                 plot_img = init_image.numpy()
+                print("HERE",type(plot_img))
                 plot_img = deprocess_img(plot_img)
                 imgs.append(plot_img)
                 # IPython.display.clear_output(wait=True)
@@ -386,8 +389,15 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
         #     plt.xticks([])
         #     plt.yticks([])
         text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
-        if(text == 0):
+        if( text == '0' or text == 'no' or text == 'n' or text=="No"):
+            print('here')
             again = False
+
+        text = raw_input("Do you want to save the clipped value?: 1 - yes, 0 - no")
+        if (text == '1' or text == 'yes' or text == 'Yes' or text=="y"):
+           filehandler = open('clipped_values/' + str(style_name) + '_cippedValueAfter_' + str(counter), 'w')
+           pickle.dump(clipped, filehandler)
+
 
 
 
