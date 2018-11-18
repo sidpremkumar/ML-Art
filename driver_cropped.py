@@ -1,4 +1,4 @@
-from neutral_style_transfer import *
+from neutral_style_transfer_cropped import *
 
 
 enableEagerExecution()

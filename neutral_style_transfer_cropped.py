@@ -14,7 +14,7 @@ import IPython.display
 from PIL import Image
 import time
 import functools
-import scipy.ndimage as ndimage
+
 
 import pickle
 
@@ -34,8 +34,8 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-content_path = 'img/c6.jpeg'
-style_path = 'img/s1.jpg'
+content_path = 'img/c4.jpg'
+style_path = 'img/s2.jpg'
 style_name = 'sama2'
 # Size of cropped image
 SIZE = 1000
@@ -119,6 +119,18 @@ def load_and_process_img(path_to_img):
     # we want to load and preprocess our images
     # we will follow the VGG training method
     img = load_img(path_to_img)
+
+    # Guarentees compatabilty of the image
+    # Adequare image to the format the model requires (bc the model will look at multiple dimension)
+    img = tf.keras.applications.vgg19.preprocess_input(img)
+    return img
+
+def load_and_process_img_iter(img):
+    # we want to load and preprocess our images
+    # we will follow the VGG training method
+    img = kp_image.img_to_array(img)
+    # We need to broadcast the image array such that it has a batch dimension
+    img = np.expand_dims(img, axis=0)
 
     # Guarentees compatabilty of the image
     # Adequare image to the format the model requires (bc the model will look at multiple dimension)
@@ -276,19 +288,6 @@ def compute_grads(cfg):
     return tape.gradient(total_loss, cfg['init_image']), all_loss
 
 
-def load_and_process_img_iter(img):
-    # we want to load and preprocess our images
-    # we will follow the VGG training method
-    img = kp_image.img_to_array(img)
-    # We need to broadcast the image array such that it has a batch dimension
-    img = np.expand_dims(img, axis=0)
-
-    # Guarentees compatabilty of the image
-    # Adequare image to the format the model requires (bc the model will look at multiple dimension)
-    img = tf.keras.applications.vgg19.preprocess_input(img)
-    return img
-
-
 def driver(content_path, style_path, num_iterations=10, content_weight=1e3, style_weight=1e-2):
     # we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
     model = get_model()
@@ -305,6 +304,12 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
 
     # load and process inital image, convert it
     init_image = load_and_process_img(content_path)
+    #copy the original image to persever black areas
+
+    temp = init_image
+    img_copy = deprocess_img(temp)
+    img_copy = np.array(img_copy)
+
     # make the image into a tensor
     init_image = tfe.Variable(init_image, dtype=tf.float32)
 
@@ -369,36 +374,34 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
             # to allow to deprocessing
             clipped = tf.clip_by_value(init_image, min_vals, max_vals)
             init_image.assign(clipped)
-            # image = Image.fromarray(plot_img)
-            # plot_img = image.numpy()
-            # plot_img = deprocess_img(plot_img)
-            # imgs.append(plot_img)
-            # image.save('outputs/gif/' + str(style_name) + '-' + str(i) + '.bmp')
-            # if i % 100 == 0 and i != 0 and i != 1:
-            #     # Use the .numpy() method to get the concrete numpy array
-            #     init_image = init_image.numpy()
-            #     init_image = deprocess_img(init_image)
-            #     #apply gaussian filter to smooth out picture
-            #     init_image = ndimage.gaussian_filter(init_image, sigma=(0.2, 0.2, 0), order=0)
-            #
-            #     #convert back to continue neural style
-            #     init_image = load_and_process_img_iter(init_image)
-            #
-            #     init_image = tfe.Variable(init_image, dtype=tf.float32)
+
+            #we want to turn the black to black according to the orginal cropped image.
+            if i % 100 == 0 :
+                init_image = init_image.numpy()
+                init_image = deprocess_img(init_image)
+                init_image = np.array(init_image)
+                width, height = init_image.shape[0], init_image.shape[1]
+
+                for h in tqdm(xrange(0, height)):
+                    for w in xrange(0, width):
+                            if(np.all(img_copy[ w , h ] == 0)):
+                                init_image[w,h] = (0,0,0)
+                            else:
+                                init_image[w, h] = init_image [w,h]
+
+                #convert back to continue neural style
+                init_image = load_and_process_img_iter(init_image)
+                init_image = tfe.Variable(init_image, dtype=tf.float32)
 
             if loss < best_loss:
                 # updates best loss
                 best_loss = loss
                 best_img = deprocess_img(init_image.numpy())
             #if i % display_interval == 0:
-
             if i % 15 == 0:
                 # Use the .numpy() method to get the concrete numpy array
                 plot_img = init_image.numpy()
                 plot_img = deprocess_img(plot_img)
-
-
-
                 imgs.append(plot_img)
                 # IPython.display.clear_output(wait=True)
                 # IPython.display.display_png(Image.fromarray(plot_img))
