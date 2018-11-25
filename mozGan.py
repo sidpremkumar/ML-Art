@@ -1,6 +1,6 @@
-from keras.layers import Conv2D, Conv2DTranspose, Flatten, Dense, LeakyReLU, BatchNormalization, Input
+from keras.layers import Conv2D, Conv2DTranspose, Flatten, Dense, LeakyReLU, BatchNormalization, Input, Embedding, multiply
 from keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler
-from keras.models import Sequential
+from keras.models import Sequential, Model
 from keras.metrics import mean_squared_error
 from keras.optimizers import Adam
 from keras.initializers import RandomNormal
@@ -113,7 +113,17 @@ class DCGAN:
 
 
         #Inputs to the model
-        return model
+        img = Input(shape=self.image_shape)
+
+        # Extract feature representation
+        features = model(img)
+
+        # Determine validity and label of the image
+        validity = Dense(1, activation="sigmoid")(features)
+        label = Dense(self.num_classes+1, activation="softmax")(features)
+
+        return Model(img, [validity, label])
+
 
     def generator(self):
         model = Sequential()
@@ -150,13 +160,13 @@ class DCGAN:
                     activation='tanh',
                     use_bias=False,
                     kernel_initializer=self.weight_init))
-
+        model.summary()
 
         noise = Input(shape=(self.latent_dim,))
         label = Input(shape=(1,), dtype='int32')
         label_embedding = Flatten()(Embedding(self.num_classes, 100)(label))
         model_input = multiply([noise, label_embedding])
-        img = model(model_input)
+        img = Model(model_input)
 
         return Model([noise, label], img)
 
@@ -164,7 +174,22 @@ class DCGAN:
         model = Sequential()
         model.add(generator)
         model.add(discriminator)
-        return model
+        # For the combined model we will only train the generator
+        self.discriminator.trainable = False
+        # The generator takes noise and the target label as input
+        # and generates the corresponding digit of that label
+        noise = Input(shape=(self.latent_dim,))
+        label = Input(shape=(1,))
+        img = self.generator([noise, label])
+
+        # The discriminator takes generated image as input and determines validity
+        # and the label of that image
+        valid, target_label = self.discriminator(img)
+
+        # The combined model  (stacked generator and discriminator)
+        # Trains the generator to fool the discriminator
+
+        return Model([noise, label], [valid, target_label])
 
     def wasserstein_loss(self, y_true, y_pred):
         return -K.mean(y_true*y_pred)
@@ -188,6 +213,7 @@ class Trainer:
         self.dcgan = dcgan
         #define the latent z vector size
         self.z_size = dcgan.z_size
+        self.latent_dim = dcgan.latent_dim
         #same with learning rate
         self.lr = dcgan.lr
         #build out this network, create each of the CNN
@@ -220,6 +246,28 @@ class Trainer:
         self.model_compiler(optimizer)
         self.plot_path = plot_path
 
+
+        # -->>>
+        # The generator takes noise and the target label as input
+        # and generates the corresponding digit of that label
+        noise = Input(shape=(self.latent_dim,))
+        label = Input(shape=(1,))
+        img = self.generator([noise, label])
+
+        # For the combined model we will only train the generator
+        self.discriminator.trainable = False
+
+        # The discriminator takes generated image as input and determines validity
+        # and the label of that image
+        valid, target_label = self.discriminator(img)
+
+        # The combined model  (stacked generator and discriminator)
+        # Trains the generator to fool the discriminator
+        self.combined = Model([noise, label], [valid, target_label])
+        self.combined.compile(loss=self.dcgan.wasserstein_loss,
+            optimizer=opt)
+
+
     def model_compiler(self,optimizer):
         if optimizer.lower() == 'adam':
             opt = Adam(lr=self.lr, beta_1=0.5,beta_2=0.9)
@@ -228,7 +276,7 @@ class Trainer:
 
         #build the generator and discriminator
         self.discriminator.compile(optimizer=opt, loss=self.dcgan.wasserstein_loss)
-        self.generator.compile(optimizer=opt, loss=self.dcgan.wasserstein_loss)
+        # self.generator.compile(optimizer=opt, loss=self.dcgan.wasserstein_loss)
 
         #ensure the discriminator is not trainable and then create the adversarial (G vs D)
 
@@ -277,7 +325,9 @@ class Trainer:
     def gen_batch(self, batch_size):
         latent_vector_batch = self.make_noise(batch_size)
         gen_output = self.generator.predict_on_batch(latent_vector_batch)
-        return gen_output
+        #0-9 for valid images (the classes), and then 10 will be for fake!
+        fake_labels = 10 * np.ones(batch_size)
+        return gen_output, fake_labels
 
     def plot_dict(self, dictonary):
         for key, item in dictonary.items():
@@ -313,7 +363,11 @@ class Trainer:
 
 
         for epoch in tqdm(range(num_epochs)):
+            valid = []
+            for x in range(batch_size):
+                valid.append(1)
 
+            fake = np.zeros((batch_size, 1))
             if (epoch) % 5 == 0:
                 self.make_images(epoch+1, num_images=3)
 
@@ -350,12 +404,14 @@ class Trainer:
                     #train with real data:
                     (data_batch, data_batch_class) = self.get_batch(batch_size)
                     #np.ones means that this is 1 -> true -> real numbers
-                    disc_loss_real = self.discriminator.train_on_batch(data_batch, np.ones(batch_size))
+                    print(valid[0])
+                    disc_loss_real = self.discriminator.train_on_batch(data_batch, [valid, data_batch_class])
 
                     #train with batch of generator (fake) data
                     #-np.ones means that this is -1 -> false -> fake
-                    gen_batch = self.gen_batch(batch_size)
-                    disc_loss_fake = self.discriminator.train_on_batch(gen_batch, -np.ones(batch_size))
+                    #gen_batch_class is an array of 10's, indicating fake image
+                    gen_batch, gen_batch_class = self.gen_batch(batch_size)
+                    disc_loss_fake = self.discriminator.train_on_batch(gen_batch, [fake, gen_batch_class])
 
                 #train the generator now
 
@@ -366,6 +422,7 @@ class Trainer:
                 self.discriminator.trainable = False
 
                 #train the adversarial (G vs D) with np.ones 1 -> True
+
                 gen_loss = self.adversarial.train_on_batch(noise, np.ones(batch_size))
                 self.discriminator.trainable = True
 
