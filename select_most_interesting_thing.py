@@ -1,146 +1,175 @@
 import numpy as np
-import cv2 as cv
+import cv2
 from matplotlib import pyplot as plt
 from PIL import Image
 from tqdm import tqdm
-import sys
+from random import randint
+import math
+import glob
 
-import pycuda.autoinit
-import pycuda.driver as drv
-from pycuda.compiler import SourceModule
-mod = SourceModule("""
-__global__ void multiply_them(float *dest, float *a, float *b)
-{
-  const int i = threadIdx.x;
-  dest[i] = a[i] * b[i];
-}
-""")
 
-#global variables
-num_iterations = 50
-#Open the images
-img = cv.imread('messi5.jpg')
-base = Image.open('messi5.jpg')
-
-#Implementation of grabcut algorithum. Taken from: https://docs.opencv.org/3.4/d8/d83/tutorial_py_grabcut.html
-mask = np.zeros(img.shape[:2],np.uint8)
 bgdModel = np.zeros((1,65),np.float64)
 fgdModel = np.zeros((1,65),np.float64)
-rect = (50,50,450,290)
-cv.grabCut(img,mask,rect,bgdModel,fgdModel,5,cv.GC_INIT_WITH_RECT)
-mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
+
+#global variables ->
+SIZE = 1000
+image = 'outputs/most_interesting/test1.jpeg'
 
 
-def incr(pix,factor):
-    # print("before: ", pix)
-    one = max(255, pix[0]+factor)
-    two = max(255, pix[1]+factor)
-    three = max(255, pix[2]+factor)
-    new = (one, two, three)
-    # print("after: ", new)
-    return pix
+def rect(x1, x2, y1, y2):
+    return (x1,x2,y1,y2)
 
 
-new = img.copy()
-
-#Repetedily grab and blend the images, hopefully getting a good idea of what we want to see !
-#for i in tqdm(range(num_iterations)): #repeat!
-for i in tqdm(range(num_iterations)): #repeat!
-    if num_iterations == 1: #base case
-            img = img*mask2[:,:,np.newaxis] #grabcut image
-            img = Image.fromarray(img) #convert it to ndarray
-            test = img
-            test.save('outputs/most_interesting/' + 'crop_' + str(i) + '.jpg')
-            width, height = img.size
-            pix = img.copy()
-            factor = 25
-            for x in tqdm(range(10)):
-                for w in xrange(width-1):
-                    for h in xrange(height):
-                        #TODO: Change it so its looking for != 0
-                        if(pix.getpixel( (w,h) ) != (0,0,0)):
-                            try:
-                                if (img.getpixel( (w+1,h) ) == (0,0,0)):
-                                    img.putpixel( (w+1, h), incr(img.getpixel( (w+1,h) ),factor))
-                                if (img.getpixel( (w,h+1) ) == (0,0,0)):
-                                    img.putpixel( (w, h+1), incr(img.getpixel( (w+1,h) ),factor))
-                                if (img.getpixel( (w+1,h+1) ) == (0,0,0)):
-                                    img.putpixel( (w+1, h+1), incr(img.getpixel( (w+1,h) ),factor))
-                                if(img.getpixel( (w-1,h) ) == (0,0,0)):
-                                    img.putpixel( (w-1, h), incr(img.getpixel( (w+1,h) ),factor))
-                                if (img.getpixel( (w,h-1) ) == (0,0,0)):
-                                    img.putpixel( (w, h-1), incr(img.getpixel( (w+1,h) ),factor))
-                                if (img.getpixel( (w-1,h-1) ) == (0,0,0)):
-                                    img.putpixel( (w-1, h-1), incr(img.getpixel( (w+1,h) ),factor))
-                            except:
-                                  continue
-                # img.save('outputs/most_interesting/' + str(i) + '-messi2.jpg')
-
-            # pix = np.clip(pix, 0, 255).astype('uint8')
-            # print(type(pix))
-            # new = Image.fromarray(pix)
-            new = Image.blend(base,img, 0.5) #blend the image and the original image
-            new.save('outputs/most_interesting/' + 'img_' + str(i) + '.jpg')
-
-
-    img = new*mask2[:,:,np.newaxis] #grabcut image
-    img = Image.fromarray(img) #convert it to ndarray
-    test = img
-    test.save('outputs/most_interesting/' + 'crop_' + str(i) + '.jpg')
+def load_img(path_to_img):
+    max_dim = SIZE
+    img = Image.open(path_to_img)
+    # long
+    x = max(img.size)
+    scale = float(float(max_dim) / float(x))
     width, height = img.size
-    pix = img.copy()
-    factor = 50
-    for x in tqdm(range(25)):
-        for w in xrange(width-1):
-            for h in xrange(height):
-                #TODO: Change it so its looking for != 0
-                if(pix.getpixel( (w,h) ) != (0,0,0)):
-                    try:
-                        if (img.getpixel( (w+1,h) ) == (0,0,0)):
-                            img.putpixel( (w+1, h), incr(img.getpixel( (w+1,h) ),factor))
-                        if (img.getpixel( (w,h+1) ) == (0,0,0)):
-                            img.putpixel( (w, h+1), incr(img.getpixel( (w+1,h) ),factor))
-                        if (img.getpixel( (w+1,h+1) ) == (0,0,0)):
-                            img.putpixel( (w+1, h+1), incr(img.getpixel( (w+1,h) ),factor))
-                        if(img.getpixel( (w-1,h) ) == (0,0,0)):
-                            img.putpixel( (w-1, h), incr(img.getpixel( (w+1,h) ),factor))
-                        if (img.getpixel( (w,h-1) ) == (0,0,0)):
-                            img.putpixel( (w, h-1), incr(img.getpixel( (w+1,h) ),factor))
-                        if (img.getpixel( (w-1,h-1) ) == (0,0,0)):
-                            img.putpixel( (w-1, h-1), incr(img.getpixel( (w+1,h) ),factor))
-                    except:
-                          continue
-        # img.save('outputs/most_interesting/' + str(i) + '-messi2.jpg')
+    # scale and resize the images, so that they are the same
+    img = img.resize((int(width * scale), int(height * scale)), Image.ANTIALIAS)
 
-    # pix = np.clip(pix, 0, 255).astype('uint8')
-    # print(type(pix))
-    # new = Image.fromarray(pix)
-    new = Image.blend(base,img, 0.5) #blend the image and the original image
-
-    new.save('outputs/most_interesting/' + 'img_' + str(i) + '.jpg')
+    #convert to openCV format
+    img = np.array(img)
+    return img
 
 
-    # img.save('outputs/most_interesting/' + str(i) + '-crop.jpg')
+def grabCut(img, rect):
+    # img = cv2.imread('outputs/most_interesting/messi5.jpg')
+    img_local = img
+    mask = np.zeros(img_local.shape[:2],np.uint8)
+    cv2.grabCut(img_local,mask,rect,bgdModel,fgdModel,1,cv2.GC_INIT_WITH_RECT)
+    mask2 = np.where((mask==2)|(mask==0),0,1).astype('uint8')
+    img_local = img_local*mask2[:,:,np.newaxis]
+    new = Image.fromarray(img_local)
+    return new
+
+
+def findOpt(imgs,percent):
+
+    new_imgs = []
+    print("Finding Optimal... ")
+    for i in tqdm(range(len(imgs))):
+        # TODO: No more image.open when working
+        img_iter = Image.open(imgs[i])
+        totalpix = img_iter.size[0] * img_iter.size[1]
+        num_black_pix = 0
+        pixles = img_iter.getdata()
+        for pixle in pixles:
+            if pixle == (0,0,0):
+                num_black_pix += 1
+        percenta = float(float(num_black_pix)/float(totalpix))
+        #print(1-percenta)
+        if (1-percenta) >= percent:
+            new_imgs.append(img_iter)
+
+    return new_imgs
+def averagePix(img_iter):
+    img = img_iter.copy()
+    width, height = img.size
+
+    total1 = 0
+    total2 = 0
+    total3 = 0
+    for i in range(0, width):
+        for j in range(0, height):
+            total1 += img.getpixel((i,j))[0]
+            total2 += img.getpixel((i,j))[1]
+            total3 += img.getpixel((i,j))[2]
+
+    mean1 = total1 / (width * height)
+    mean2 = total2 / (width * height)
+    mean3 = total3 / (width * height)
+    return mean1, mean2, mean3
+
+
+def concatImgs(imgs,base):
+    print("Concat best images...")
+    zeroed = False
+    base_copy = base.copy()
+    average = averagePix(base_copy)
+    for i in tqdm (range(len(imgs))):
+        #img_iter = Image.open(imgs[i])
+        img_iter = imgs[i]
+        width, height = img_iter.size
+        for x in range(width):
+            for y in range(height):
+                try:
+                    if (zeroed != True):
+                        base.putpixel((x,y), average)
+                    if (img_iter.getpixel((x,y)) != (0,0,0)):
+                        base.putpixel((x,y), base_copy.getpixel((x,y)))
+                except Exception as error:
+                     print(error)
+        zeroed = True
+    return base
+
+
+
+def main():
+    #size -> 1000x1000
+    img = load_img(image)
+
+    imgs = []
+    x1 = 0
+    x2 = 0
+    y2 = 0
+    y1 = 0
+    print("Collecting all possibilities...")
+    #TODO: testing we will just load from array
+    # help1 = 1000^2
+    # help2 = 750^2
+    # tot = math.sqrt(help1 * help1 * help2 * help2)
+    # counter = 0
+    # while x1 < 50:
+    #     x1 += randint(0,200)
     #
+    #     while x2 < 1000:
+    #         x2 += randint(0,300)
     #
-    # new = Image.blend(base,img, 0.5) #blend the image and the original image
+    #         while y1 < 750:
+    #             y1 += randint(0,400)
     #
-    # img = new
-    #
-    # new.save('outputs/most_interesting/' + str(i) + '-messi.jpg')
+    #             while y2 < 750:
+    #                 y2 += randint(250,500)
+    #                 #TODO: Make this prediction better. Move it to the first while loop, and set x2, y1, y2 to 1000, 750, 750, then make it a %
+    #                 help1 = x1^2
+    #                 help11 = x2^2
+    #                 help2 = y2^2
+    #                 help22 = y2^2
+    #                 left = math.sqrt(help1 * help11 * help2 * help22)
+    #                 #remaining is just calcualted similar to euclidian distance
+    #                 print("remaining = :", tot - left - 300000)
+    #                 try:
+    #                     rectangle = rect(int(x1),int(x2),int(y1),int(y2))
+    #                     #print(rectangle)
+    #                     new = grabCut(img,rectangle)
+    #                     imgs.append(new)
+    #                     new.save('outputs/most_interesting/testing-' + str(counter)+'.jpg')
+    #                     counter += 1
+    #                 except:
+    #                     continue
+    #             y2 = 0
+    #         y1 = 0
+    #     x2 = 0
+    base = load_img(image)
+    base = Image.fromarray(base)
+    imgs = glob.glob('outputs/most_interesting/testing-*.jpg')
+    #findOpt (image array, percent of blacsk pix at most)
+    img = findOpt(imgs, 0.15)
+    # counter = 0
+    # for i in img:
+    #     i.save('outputs/most_interesting/findOpt-' + str(i) + '.jpg')
+    #     counter += 1
+    img = concatImgs(img, base)
+
+    img.save('outputs/most_interesting/findOpt-OPT.jpg')
+    # for i in img:
+    #     i.save('outputs/most_interesting/findOpt-' + str(i) + '.jpg')
 
 
-print("Done!")
 
 if __name__ == '__main__':
-    multiply_them = mod.get_function("multiply_them")
-
-    a = numpy.random.randn(400).astype(numpy.float32)
-    b = numpy.random.randn(400).astype(numpy.float32)
-
-    dest = numpy.zeros_like(a)
-    multiply_them(
-            drv.Out(dest), drv.In(a), drv.In(b),
-            block=(400,1,1), grid=(1,1))
-
-    print dest-a*b
+    main()
+print("Done!")

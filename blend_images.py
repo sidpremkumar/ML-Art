@@ -18,10 +18,12 @@ def load_img(path_to_img):
     # We need to broadcast the image array such that it has a batch dimension
     return img
 
+#content
+two = 'outputs/temp/temp-1999.bmp'
 
-one = 'img/c5.jpeg'
-two = 'outputs/sama2/sama2-1870.bmp'
-cropped = 'img/c4.jpg'
+#background
+one = 'outputs/most_interesting/test1.jpeg'
+cropped = 'outputs/most_interesting/findOpt-OPT.jpg'
 
 
 
@@ -61,9 +63,9 @@ for h in tqdm(xrange(0, height)):
 
 img = Image.fromarray(img)
 
-#blend the original and style image just a little! 
+#blend the original and style image just a little!
 new = Image.blend(img, style, 0.1)
-new.save('outputs/most_interesting/' + 'img_sama.jpg')
+new.save('outputs/most_interesting/' + 'img_obama2.jpg')
 
 
 

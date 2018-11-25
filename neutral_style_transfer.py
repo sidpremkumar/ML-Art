@@ -34,11 +34,12 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-content_path = 'img/c6.jpeg'
+#content_path = 'outputs/most_interesting/findOpt-OPT.jpg'
 style_path = 'img/s1.jpg'
-style_name = 'sama2'
+style_name = 'temp'
+SAVE_ITERATION  = False 
 # Size of cropped image
-SIZE = 1000
+SIZE = 28
 TRAINABLE = False
 
 # The intermidiate layers that we are going to be looking for:
@@ -61,7 +62,7 @@ def main_init():
     # GPU Config
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.9
+    config.gpu_options.per_process_gpu_memory_fraction = 1
     session = tf.Session(config=config)
 
     # #configure the plt
@@ -392,7 +393,7 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
                 best_img = deprocess_img(init_image.numpy())
             #if i % display_interval == 0:
 
-            if i % 15 == 0:
+            if i % 15 == 0 && SAVE_ITERATION==True:
                 # Use the .numpy() method to get the concrete numpy array
                 plot_img = init_image.numpy()
                 plot_img = deprocess_img(plot_img)
@@ -433,4 +434,4 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
 
 
     print("Done!")
-    return best_img, best_loss
+    return best_img
