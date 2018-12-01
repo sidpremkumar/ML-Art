@@ -34,10 +34,10 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-#content_path = 'outputs/most_interesting/findOpt-OPT.jpg'
-style_path = 'img/s1.jpg'
+#content_path = 'outputs/most_interesting/0_digit.png'
+#style_path = 'img/s1.jpg'
 style_name = 'temp'
-SAVE_ITERATION  = False 
+
 # Size of cropped image
 SIZE = 28
 TRAINABLE = False
@@ -92,7 +92,11 @@ def enableEagerExecution():
 
 def load_img(path_to_img):
     max_dim = SIZE
-    img = Image.open(path_to_img)
+
+    if(type(path_to_img) is str):
+        img = Image.open(path_to_img)
+    else:
+        img = path_to_img
     # long
     x = max(img.size)
     scale = float(float(max_dim) / float(x))
@@ -119,6 +123,7 @@ def imshow(img, title=None):
 def load_and_process_img(path_to_img):
     # we want to load and preprocess our images
     # we will follow the VGG training method
+
     img = load_img(path_to_img)
 
     # Guarentees compatabilty of the image
@@ -290,7 +295,8 @@ def load_and_process_img_iter(img):
     return img
 
 
-def driver(content_path, style_path, num_iterations=10, content_weight=1e3, style_weight=1e-2):
+def driver(content_path, style_path='img/s1.jpg', num_iterations=10, content_weight=1e3, style_weight=1e-2, SAVE_ITERATION  = True):
+
     # we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
     model = get_model()
     #disable training in the model
@@ -357,9 +363,9 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
     again = True
     counter = 0
     while (again == True):
-        for i in tqdm(range(num_iterations - 1)):
+        for i in range(num_iterations - 1):
             counter += 1
-            # computing the next seetp in gradient decent.
+            # computing the next step in gradient decent.
             loss, style_score, content_score = all_loss
             grads, all_loss = compute_grads(cfg)
 
@@ -386,14 +392,14 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
             #     init_image = load_and_process_img_iter(init_image)
             #
             #     init_image = tfe.Variable(init_image, dtype=tf.float32)
-
             if loss < best_loss:
                 # updates best loss
                 best_loss = loss
                 best_img = deprocess_img(init_image.numpy())
+                best_img = Image.fromarray(best_img)
             #if i % display_interval == 0:
 
-            if i % 15 == 0 && SAVE_ITERATION==True:
+            if i % 15 == 0 and SAVE_ITERATION==True:
                 # Use the .numpy() method to get the concrete numpy array
                 plot_img = init_image.numpy()
                 plot_img = deprocess_img(plot_img)
@@ -409,7 +415,26 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
                 # Save the image
                 final_image.save('outputs/' + str(style_name) + '/' + str(style_name) + '-' + str(counter) + '.bmp')
 
-        print('Total time: {:.4f}s'.format(time.time() - global_start))
+            if i ==num_iterations-1:
+                # Use the .numpy() method to get the concrete numpy array
+                plot_img = init_image.numpy()
+                plot_img = deprocess_img(plot_img)
+
+
+
+                imgs.append(plot_img)
+                # IPython.display.clear_output(wait=True)
+                # IPython.display.display_png(Image.fromarray(plot_img))
+                final_image = Image.fromarray(plot_img)
+                # Show the image
+                # final_image.show()
+                # Save the image
+                final_image.save('test.bmp')
+
+
+        # print('Total time: {:.4f}s'.format(time.time() - global_start))
+        #print("Done!")
+        return best_img
         # IPython.display.clear_output(wait=True)
         # plt.figure(figsize=(14, 4))
         # for i, img in enumerate(imgs):
@@ -417,21 +442,12 @@ def driver(content_path, style_path, num_iterations=10, content_weight=1e3, styl
         #     plt.imshow(img)
         #     plt.xticks([])
         #     plt.yticks([])
-        text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
-        if( text == '0' or text == 'no' or text == 'n' or text=="No"):
-            print('here')
-            again = False
-
-        text = raw_input("Do you want to save the clipped value?: 1 - yes, 0 - no")
-        if (text == '1' or text == 'yes' or text == 'Yes' or text=="y"):
-           filehandler = open('clipped_values/' + str(style_name) + '_cippedValueAfter_' + str(counter), 'w')
-           pickle.dump(clipped, filehandler)
-
-
-
-
-
-
-
-    print("Done!")
-    return best_img
+        # text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
+        # if( text == '0' or text == 'no' or text == 'n' or text=="No"):
+        #     print('here')
+        #     again = False
+        #
+        # text = raw_input("Do you want to save the clipped value?: 1 - yes, 0 - no")
+        # if (text == '1' or text == 'yes' or text == 'Yes' or text=="y"):
+        #    filehandler = open('clipped_values/' + str(style_name) + '_cippedValueAfter_' + str(counter), 'w')
+        #    pickle.dump(clipped, filehandler)
