@@ -1,20 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Train an Auxiliary Classifier Generative Adversarial Network (ACGAN) on the
-MNIST dataset. See https://arxiv.org/abs/1610.09585 for more details.
-You should start to see reasonable images after ~5 epochs, and good images
-by ~15 epochs. You should use a GPU, as the convolution-heavy operations are
-very slow on the CPU. Prefer the TensorFlow backend if you plan on iterating,
-as the compilation time can be a blocker using Theano.
-Timings:
-Hardware           | Backend | Time / Epoch
--------------------------------------------
- CPU               | TF      | 3 hrs
- Titan X (maxwell) | TF      | 4 min
- Titan X (maxwell) | TH      | 7 min
-Consult https://github.com/lukedeo/keras-acgan for more information and
-example output
-"""
+
+#Based on the orignal repo: https://github.com/lukedeo/keras-acgan/blob/master/mnist_acgan.py
+#imports ->
 from __future__ import print_function
 import os
 from neutral_style_transfer import *
@@ -38,14 +25,20 @@ from keras.optimizers import Adam
 from keras.utils.generic_utils import Progbar
 import numpy as np
 from tensorflow.python.keras.preprocessing import image as kp_image
-
+from keras.models import load_model
 np.random.seed(1337)
+
+
+#Global Variables
+OFFSET = 0
 num_classes = 10
+LOAD_WEIGHTS = False
 
-
+#INPUT:Latent, Image class
+#OUTPUT: Image (..., 28,28,3)
 def build_generator(latent_size):
-    # we will map a pair of (z, L), where z is a latent vector and L is a
-    # label drawn from P_c, to image space (..., 28, 28, 1)
+    # we will map a pair of (z, L) to an image (..., 28, 28, 3)
+    # L will be the latent vector, and z will be the class
     model = Sequential()
 
     model.add(Dense(3 * 3 * 384, input_dim=latent_size, activation='relu'))
@@ -74,6 +67,7 @@ def build_generator(latent_size):
     # this will be our label
     image_class = Input(shape=(1,), dtype='int32')
 
+    #Embed the number of classes (1-10) with the laten size
     cls = Embedding(num_classes, latent_size,
                     embeddings_initializer='glorot_normal')(image_class)
 
@@ -84,7 +78,8 @@ def build_generator(latent_size):
 
     return Model([latent, image_class], fake_image)
 
-
+#INPUT: Image (28, 28,3)
+#OUTPUT: Is the image fake or not? T/F, What class is the image?
 def build_discriminator():
     # build a relatively standard conv net, with LeakyReLUs as suggested in
     # the reference paper
@@ -116,18 +111,18 @@ def build_discriminator():
     # thinks the image that is being shown is fake, and the second output
     # (name=auxiliary) is the class that the discriminator thinks the image
     # belongs to.
-    #is the image fake or not?
+    # is the image fake or not?
     fake = Dense(1, activation='sigmoid', name='generation')(features)
     #class the image belongs too
     aux = Dense(num_classes, activation='softmax', name='auxiliary')(features)
 
     return Model(image, [fake, aux])
 
+#Convert the dataset via the neutal_style_transfer.py file
 def neural_transfer(x_train, x_test):
     xtrain = 0
     xtest = 0
     for image in tqdm(x_train):
-        #content_path, style_path='img/s1.jpg', num_iterations=10, content_weight=1e3, style_weight=1e-2, SAVE_ITERATION  = True
         img = Image.fromarray(image)
         img = img.convert('RGB')
         img = driver(img, num_iterations=30, SAVE_ITERATION=False)
@@ -142,34 +137,55 @@ def neural_transfer(x_train, x_test):
     #     xtest += 1
 
     print("CONVERTED IMAGES")
+    #Exit so you can restart the program (need to disable eager execution)
     exit()
     return x_train, x_test
 
+#Simple function to load in the data we stylized
 def load_transfer_data():
-    x_train = np.empty((2000,28,28,3))
+    x_train = np.empty((100,28,28,3))
     print("Loading images...")
-    for x in tqdm(range(2000)):
-        file = Image.open('x_train/' + str(x) + '.bmp')
+    for x in tqdm(range(100)):
+        if OFFSET == 0:
+            m = x
+        else:
+            m = OFFSET * 100 + x
+        file = Image.open('x_train/' + str(m) + '.bmp')
         img = np.array(file)
         x_train = np.append(x_train,[img], axis=0)
     (_, y_train), (x_test, y_test) = mnist.load_data()
-    # x_test = np.squeeze(x_test, axis=(4,))
-    # print(x_test.shape)
 
     return (x_train, y_train), (x_test, y_test)
 
+#Simple function to load in the data we stylized between low and high
+#INPUT: low=lower bound, high=higher bound, gloabal_y_train=global list of class (0-9)
+#OUTPUT: y_train=class the images corrspond to, x_train=stylized images
+def load_transfer_data_interval(low, high, global_y_train):
+    x_train = np.empty((0, 28,28,3))
+    x = low
+    while x < high:
+        file = Image.open('x_train/' + str(x) + '.bmp')
+        img = np.array(file)
+        x_train = np.append(x_train,[img], axis=0)
+        x = x+1
+    x_train = (x_train.astype(np.float32) - 127.5) / 127.5
+    x_train = np.expand_dims(x_train, axis=-1)
 
-    return x_train, x_test
+    x_train = np.squeeze(x_train, axis=(4,))
+    return global_y_train[low:high], x_train
+
 if __name__ == '__main__':
     i = 0
-    #enable eager execution
+    #enable eager execution if we are stylizying images
     # enableEagerExecution()
-    # (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    # x_train, x_test = neural_transfer(x_train, x_test)
+    #Else we load in the transfer data
     (x_train, y_train), (x_test, y_test) = load_transfer_data()
 
-    # x_train, x_test = neural_transfer(x_train, x_test)
 
-    # batch and latent size taken from the paper
+
+
+    # batch and latent size taken from the orignal repo: https://github.com/lukedeo/keras-acgan/blob/master/mnist_acgan.py
     epochs = 100
     batch_size = 10
     latent_size = 100
@@ -180,15 +196,26 @@ if __name__ == '__main__':
 
     # build the discriminator
     print('Discriminator model:')
-    discriminator = build_discriminator()
-    discriminator.compile(
-        optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
-        loss=['binary_crossentropy', 'sparse_categorical_crossentropy']
-    )
-    discriminator.summary()
+    if(LOAD_WEIGHTS):
+        discriminator = build_discriminator()
+        discriminator = load_model("plots/weights/params_discriminator_epoch_100.h5")
+        discriminator.summary()
+        generator = build_generator(latent_size)
+        generator = load_model("plots/weights/params_generator_epoch_100.h5")
+        print("Loaded pre-computed weights")
+        exit()
+    else:
+        discriminator = build_discriminator()
+        discriminator.compile(
+            optimizer=Adam(lr=adam_lr, beta_1=adam_beta_1),
+            loss=['binary_crossentropy', 'sparse_categorical_crossentropy']
+            )
+        discriminator.summary()
 
-    # build the generator
-    generator = build_generator(latent_size)
+        # build the generator
+        generator = build_generator(latent_size)
+        print("Created new weights")
+
     #latent z vector
     latent = Input(shape=(latent_size, ))
     #the number of classes (in MNIST this is 10)
@@ -212,10 +239,8 @@ if __name__ == '__main__':
     combined.summary()
 
     # get our mnist data, and force it to be of shape (..., 28, 28, 1)
-    # (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    #
-    # #If we want to first stylize our input
-    # x_train, x_test = neural_transfer(x_train, x_test)
+    (_, global_y_train), (_, _) = mnist.load_data()
+
     #normalize the input to -1 to 1
     x_train = (x_train.astype(np.float32) - 127.5) / 127.5
     #flatten
@@ -226,30 +251,32 @@ if __name__ == '__main__':
     x_test = np.expand_dims(x_test, axis=-1)
 
     #extract relevent info
-    num_train, num_test = x_train.shape[0], x_train.shape[0]
+    num_train, num_test = 10000, 10000
 
 
     train_history = defaultdict(list)
     test_history = defaultdict(list)
+
     x_train = np.squeeze(x_train, axis=(4,))
+
+    low = 0
+    high = int(np.ceil(x_train.shape[0] / float(batch_size))) * batch_size
     for epoch in range(1, epochs + 1):
         print('Epoch {}/{}'.format(epoch, epochs))
 
-        num_batches = int(np.ceil(x_train.shape[0] / float(batch_size)))
+        num_batches = int(np.ceil(10000 / float(batch_size)))
         progress_bar = Progbar(target=num_batches)
 
         #for saving information
         epoch_gen_loss = []
         epoch_disc_loss = []
 
+        y_train = global_y_train
+        low = low + num_batches
+        high = high + num_batches
         for index in range(num_batches):
             # get a batch of real images
-            image_batch = x_train[index * batch_size:(index + 1) * batch_size]
-
-            label_batch = y_train[index * batch_size:(index + 1) * batch_size]
-            #print(image_batch[0][2][5]*127.5+127.5)
-            # temmp = Image.fromarray((image_batch[0]*127.5+127.5).astype(np.uint8))
-            # temmp.save('plots/' + str(label_batch[0]) + '.bmp')
+            label_batch, image_batch = load_transfer_data_interval(index*batch_size,(index + 1) * batch_size, global_y_train)
 
             # generate a new batch of noise
             noise = np.random.uniform(-1, 1, (len(image_batch), latent_size))
@@ -261,6 +288,7 @@ if __name__ == '__main__':
             # conditioner. We reshape the sampled labels to be
             # (len(image_batch), 1) so that we can feed them into the embedding
             # layer as a length one sequence
+
             generated_images = generator.predict(
                 [noise, sampled_labels.reshape((-1, 1))], verbose=0)
 
@@ -326,8 +354,6 @@ if __name__ == '__main__':
         aux_y = np.concatenate((y_test, sampled_labels), axis=0)
 
         # see if the discriminator can figure itself out...
-        # discriminator_test_loss = discriminator.evaluate(
-        #     x, [y, aux_y], verbose=False)
 
         discriminator_train_loss = np.mean(np.array(epoch_disc_loss), axis=0)
 
@@ -348,7 +374,6 @@ if __name__ == '__main__':
         train_history['discriminator'].append(discriminator_train_loss)
 
         test_history['generator'].append(generator_test_loss)
-        #test_history['discriminator'].append(discriminator_test_loss)
 
         print('{0:<22s} | {1:4s} | {2:15s} | {3:5s}'.format(
             'component', *discriminator.metrics_names))
@@ -361,14 +386,19 @@ if __name__ == '__main__':
                              *test_history['generator'][-1]))
         print(ROW_FMT.format('discriminator (train)',
                              *train_history['discriminator'][-1]))
-        # print(ROW_FMT.format('discriminator (test)',
-        #                      *test_history['discriminator'][-1]))
 
-        # save weights every epoch
-        generator.save_weights(
-            'plots/weights/params_generator_epoch_{0:03d}.hdf5'.format(epoch), True)
-        discriminator.save_weights(
-            'plots/weights/params_discriminator_epoch_{0:03d}.hdf5'.format(epoch), True)
+        # save weights every epoch -> should have folder named plots
+        try:
+            generator.save(
+                'plots/weights/params_generator_epoch_save_{0:03d}.h5'.format(epoch), True)
+            discriminator.save(
+                'plots/weights/params_discriminator_epoch_save_{0:03d}.h5'.format(epoch), True)
+            generator.save_weights(
+                'plots/weights/params_generator_epoch_saveweights_{0:03d}.h5'.format(epoch), True)
+            discriminator.save_weights(
+                'plots/weights/params_discriminator_epoch_saveweights_{0:03d}.h5'.format(epoch), True)
+        except:
+            print("Missing folder plots! ")
 
         # generate some digits to display
         num_rows = 40
@@ -384,30 +414,13 @@ if __name__ == '__main__':
             [noise, sampled_labels], verbose=0)
         print(generated_images[0][5][6]*127.5 + 127.5)
         generated_image = Image.fromarray((generated_images[0]*127.5 + 127.5).astype(np.uint8))
-
-        generated_image.save('plots/' + str(i) + '_' + str(sampled_labels[0]) + '.bmp')
+        if OFFSET == 0:
+            m = i
+        else:
+            m =  OFFSET * 100 + i
+        generated_image.save('plots/' + str(m) + '_' + str(sampled_labels[0]) + '.bmp')
         i += 1
 
-        # # prepare real images sorted by class label
-        # real_labels = y_test[(epoch - 1) * num_rows * num_classes:
-        #                       epoch * num_rows * num_classes]
-        # indices = np.argsort(real_labels, axis=0)
-        # real_images = x_test[(epoch - 1) * num_rows * num_classes:
-        #                       epoch * num_rows * num_classes][indices]
-        #
-        # # display generated images, white separator, real images
-        # img = np.concatenate(
-        #     (generated_images,
-        #      np.repeat(np.ones_like(x_test[:1]), num_rows, axis=0),
-        #      real_images))
-        #
-        # # arrange them into a grid
-        # img = (np.concatenate([r.reshape(-1, 28)
-        #                        for r in np.split(img, 2 * num_classes + 1)
-        #                        ], axis=-1) * 127.5 + 127.5).astype(np.uint8)
-        #
-        # Image.fromarray(img).save(
-        #     'plot_epoch_{0:03d}_generated.png'.format(epoch))
-
+    #safe before exiting 
     with open('acgan-history.pkl', 'wb') as f:
         pickle.dump({'train': train_history, 'test': test_history}, f)
