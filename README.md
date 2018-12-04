@@ -2,7 +2,7 @@
 <p align="center">
   <img src="outputs/version1_0.gif">
 </p>
-This is the code behind the project <a href="https://sidpremkumar.com/mozGan_v1.html">Mozart</a>. Check out my website to learn more about what I'm trying to do.
+This is the code behind the project <a href="https://sidpremkumar.com/mozGan_v1.html">Mozart</a>. Check out my <a href="https://sidpremkumar.com">website</a> to learn more about what I'm trying to do.
 
 ## Getting Started
 The code developed is not very easy to run standalone. You have to first convert the images then modify the code to run the AC-GAN.
