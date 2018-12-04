@@ -15,13 +15,6 @@ from PIL import Image
 import time
 import functools
 import scipy.ndimage as ndimage
-
-import pickle
-
-# TODO: Figure out a way to save and write clipped variables
-
-# https://stackoverflow.com/questions/6568007/how-do-i-save-and-restore-multiple-variables-in-python
-
 import pickle
 
 import tensorflow as tf
@@ -34,8 +27,9 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras import backend as K
 
 # Global Variables here:
-#content_path = 'outputs/most_interesting/0_digit.png'
-#style_path = 'img/s1.jpg'
+
+content_path = 'outputs/most_interesting/0_digit.png'
+style_path = 'img/s1.jpg'
 style_name = 'temp'
 
 # Size of cropped image
@@ -58,38 +52,18 @@ num_content_layers = len(content_layers)
 num_style_layers = len(style_layers)
 
 
-def main_init():
-    # GPU Config
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 1
-    session = tf.Session(config=config)
-
-    # #configure the plt
-    # plt.figure(figsize=(10, 10))
-    #
-    # #load content and style images
-    # content = load_img(content_path).astype('uint8')
-    # style = load_img(style_path).astype('uint8')
-
-    # If Using notebook:
-    # #display the images
-    # plt.subplot(1, 2, 1)
-    # imshow(content, 'Content Image')
-    #
-    # plt.subplot(1, 2, 2)
-    # imshow(style, 'Style Image')
-    # plt.show() --- best,
-
-    best, best_loss = driver(content_path, style_path, num_iterations=1000)
-    Image.fromarray(best)
 
 
+
+# Function to enable eager exection to allow us to change the computational graph
+# as we are going through iterations
 def enableEagerExecution():
     tf.enable_eager_execution()
     print("Eager execution: {}".format(tf.executing_eagerly()))
 
-
+# Helper function to load in a imae
+# INPUT: path to the image
+# OUTPUT: scaled image as an array
 def load_img(path_to_img):
     max_dim = SIZE
 
@@ -97,7 +71,6 @@ def load_img(path_to_img):
         img = Image.open(path_to_img)
     else:
         img = path_to_img
-    # long
     x = max(img.size)
     scale = float(float(max_dim) / float(x))
     width, height = img.size
@@ -109,17 +82,10 @@ def load_img(path_to_img):
     return img
 
 
-def imshow(img, title=None):
-    # Remove the batch dimension
-    out = np.squeeze(img, axis=0)
-    # Normalize for display
-    out = out.astype('uint8')
-    plt.imshow(out)
-    if title is not None:
-        plt.title(title)
-    plt.imshow(out)
 
-
+# Load in image and processes it (with the above helper function) + vgg19
+# INPUT: path to image
+# OUTPUT: processes image as an array
 def load_and_process_img(path_to_img):
     # we want to load and preprocess our images
     # we will follow the VGG training method
@@ -132,6 +98,9 @@ def load_and_process_img(path_to_img):
     return img
 
 
+# Unprocess the image
+# INPUT: result of model(image)
+# OUTPUT: Deprocessed image
 def deprocess_img(processed_img):
     x = processed_img.copy()
     if len(x.shape) == 4:
@@ -150,7 +119,9 @@ def deprocess_img(processed_img):
     x = np.clip(x, 0, 255).astype('uint8')
     return x
 
-
+# Initilize the model
+# Creates a model that takes in a normal vgg19 input but returns the
+# style and content layers that we are interested in
 def get_model():
     # Actually creating the VCG19 model
     # we will access intermidiate layers
@@ -159,26 +130,22 @@ def get_model():
     vgg = tf.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet')
 
     # set it's trainability
-    #False in order to get the layers we are interested in
+    # False in order to get the layers we are interested in
     vgg.trainable = TRAINABLE
 
-    #from docs:
-    #Tensor programs work by first building a graph of tf.Tensor objects, detailing how each
-    #tensor is computed based on the other available tensors and then by running
-    #parts of this graph to achieve the desired results.
+    # from docs:
+    # Tensor programs work by first building a graph of tf.Tensor objects, detailing how each
+    # tensor is computed based on the other available tensors and then by running
+    # parts of this graph to achieve the desired results.
 
-    #Get corresponding intermiditate layer
-    #This is why we need to enable eager execution
-    #style layers that we are interested in, global variable
-    #We get these tensors,
+    # Get corresponding intermiditate layer
+    # This is why we need to enable eager execution
+    # style layers that we are interested in, global variable
+    # We get these tensors,
     # Note: evaluate them to get a result
 
     style_outputs = [vgg.get_layer(name).output for name in style_layers]
 
-    # print("Style_outputs type", type(style_outputs[0]))
-    # print(style_outputs[0])
-    # output = vgg.get_layer('block1_conv1').output
-    # print output
     #content layers we are interested in, global variable
     content_outputs = [vgg.get_layer(name).output for name in content_layers]
 
@@ -188,19 +155,17 @@ def get_model():
     model_outputs = style_outputs + content_outputs
 
     # return and build the model
-    # from documentation:
-    # model = Model(inputs=[a1, a2], outputs=[b1, b2, b3])
     # Train the model with the vgg input
     # set the output to be the ones produced by the style+picture
     return models.Model(vgg.input, model_outputs)
 
-
+# Function to get the content loss of the image
 def get_content_loss(base_content, target):
     # if we think of the base content as p (with x-y-z) and target as x (with x-y-z)
     # then this function is returning the equlicdian distance between the two
     return tf.reduce_mean(tf.square(base_content - target))
 
-
+# Function to get a gram matrix representation from a matrix
 def gram_matrix(input_tensor):
     # returning a gram matrix version of the intermidiate layers
     channels = int(input_tensor.shape[-1])
@@ -209,7 +174,7 @@ def gram_matrix(input_tensor):
     gram = tf.matmul(a, a, transpose_a=True)
     return gram / tf.cast(n, tf.float32)
 
-
+# Function to get the style loss of the base style vs the gram target
 def get_style_loss(base_style, gram_target):
     # compares the gram matrixes of the two, one is the style image,
     height, width, channels = base_style.get_shape().as_list()
@@ -218,7 +183,9 @@ def get_style_loss(base_style, gram_target):
     #square, squares the resulting tensor.
     return tf.reduce_mean(tf.square(gram_style - gram_target))
 
-
+# Get a feature representation of the style and content image
+# put it through the model and get the relvent information (the intermediate style_layers
+# we want to see )
 def get_feature_representations(model, content_path, style_path):
     # helper function for gradient decent
     # get the images loaded and processed,
@@ -240,7 +207,7 @@ def get_feature_representations(model, content_path, style_path):
 
     return style_features, content_features
 
-
+#Compute the loss based on the above functions
 def compute_loss(model, loss_weights, init_image, gram_style_features, content_features):
 
     # returns the total loss, stlye loss, content loss, and total variational loss
@@ -248,7 +215,7 @@ def compute_loss(model, loss_weights, init_image, gram_style_features, content_f
     style_weight, content_weight = loss_weights
 
     # pass in our pre-processed image into the model
-    #with the vgg as input, and our image as outputs
+    # with the vgg as input, and our image as outputs
     # only getting back the layers we are interested in
     model_outputs = model(init_image)
 
@@ -273,7 +240,7 @@ def compute_loss(model, loss_weights, init_image, gram_style_features, content_f
     loss = style_score + content_score
     return loss, style_score, content_score
 
-
+#compute the gradient
 def compute_grads(cfg):
     with tf.GradientTape() as tape:
         all_loss = compute_loss(**cfg)
@@ -281,7 +248,7 @@ def compute_grads(cfg):
     total_loss = all_loss[0]
     return tape.gradient(total_loss, cfg['init_image']), all_loss
 
-
+#Load and process an image as an iteration
 def load_and_process_img_iter(img):
     # we want to load and preprocess our images
     # we will follow the VGG training method
@@ -294,17 +261,22 @@ def load_and_process_img_iter(img):
     img = tf.keras.applications.vgg19.preprocess_input(img)
     return img
 
-
-def driver(content_path, style_path='img/s1.jpg', num_iterations=10, content_weight=1e3, style_weight=1e-2, SAVE_ITERATION  = True):
+# The actual driver for the program
+# INPUT: content_path=the location of the image we want to convert
+#        style_path= the location of the image we want to use as the style
+#        num_iteration=number of iterations, content_weight=how much weight to put on the content
+#        style_weight=how much weight to put on the style, SAVE_ITERATION=should we save images each iteration
+def driver(content_path, style_path, num_iterations=10, content_weight=1e3, style_weight=1e-2, SAVE_ITERATION  = False):
 
     # we dont want to train or mess with any layers except the ones we're interested in, so set their trinable to false
+
     model = get_model()
-    #disable training in the model
+    # disable training in the model
     for layer in model.layers:
         layer.trainable = False
 
     # get the style and feature representations, for our interested layers (intermidieate)
-    #put the pictures through the model, get the output of the layers we are interested in
+    # put the pictures through the model, get the output of the layers we are interested in
     style_features, content_features = get_feature_representations(model, content_path, style_path)
 
     #turn the output in gram style feature
@@ -326,6 +298,7 @@ def driver(content_path, style_path='img/s1.jpg', num_iterations=10, content_wei
     best_loss, best_img = float('inf'), None
 
     loss_weights = (style_weight, content_weight)
+    # To pass this information around easier
     cfg = {
         'model': model,
         'loss_weights': loss_weights,
@@ -335,10 +308,9 @@ def driver(content_path, style_path='img/s1.jpg', num_iterations=10, content_wei
     }
 
 
-    # # for displaying
+    # for displaying and saving
     num_rows = 2
     num_cols = 5
-
     display_interval = num_iterations / (num_rows * num_cols)
     start_time = time.time()
     global_start = time.time()
@@ -358,96 +330,58 @@ def driver(content_path, style_path='img/s1.jpg', num_iterations=10, content_wei
     clipped = tf.clip_by_value(init_image, min_vals, max_vals)
 
     init_image.assign(clipped)
-    #Image in tensor form -> init_image -> whats its loss -> all_loss ->
+    # Image in tensor form -> init_image -> whats its loss -> all_loss ->
     # gradient decent -> change values -> pass it through the model -> whats its loss?
-    again = True
     counter = 0
-    while (again == True):
-        for i in range(num_iterations - 1):
-            counter += 1
-            # computing the next step in gradient decent.
-            loss, style_score, content_score = all_loss
-            grads, all_loss = compute_grads(cfg)
+    for i in tqdm(range(num_iterations - 1)):
+        counter += 1
+        # computing the next step in gradient decent.
+        loss, style_score, content_score = all_loss
+        grads, all_loss = compute_grads(cfg)
 
-            # apply adam optimization - version of gradient decent
-            opt.apply_gradients([(grads, init_image)])
+        # apply adam optimization - version of gradient decent
+        opt.apply_gradients([(grads, init_image)])
 
-            # clipped is the init_image tensors clipped by min/max
-            # to allow to deprocessing
-            clipped = tf.clip_by_value(init_image, min_vals, max_vals)
-            init_image.assign(clipped)
-            # image = Image.fromarray(plot_img)
-            # plot_img = image.numpy()
-            # plot_img = deprocess_img(plot_img)
-            # imgs.append(plot_img)
-            # image.save('outputs/gif/' + str(style_name) + '-' + str(i) + '.bmp')
-            # if i % 100 == 0 and i != 0 and i != 1:
-            #     # Use the .numpy() method to get the concrete numpy array
-            #     init_image = init_image.numpy()
-            #     init_image = deprocess_img(init_image)
-            #     #apply gaussian filter to smooth out picture
-            #     init_image = ndimage.gaussian_filter(init_image, sigma=(0.2, 0.2, 0), order=0)
-            #
-            #     #convert back to continue neural style
-            #     init_image = load_and_process_img_iter(init_image)
-            #
-            #     init_image = tfe.Variable(init_image, dtype=tf.float32)
-            if loss < best_loss:
-                # updates best loss
-                best_loss = loss
-                best_img = deprocess_img(init_image.numpy())
-                best_img = Image.fromarray(best_img)
-            #if i % display_interval == 0:
+        # clipped is the init_image tensors clipped by min/max
+        # to allow to deprocessing
+        clipped = tf.clip_by_value(init_image, min_vals, max_vals)
+        init_image.assign(clipped)
 
-            if i % 15 == 0 and SAVE_ITERATION==True:
-                # Use the .numpy() method to get the concrete numpy array
-                plot_img = init_image.numpy()
-                plot_img = deprocess_img(plot_img)
+        if loss < best_loss:
+            # updates best loss
+            best_loss = loss
+            best_img = deprocess_img(init_image.numpy())
+            best_img = Image.fromarray(best_img)
+
+        if i % 15 == 0 and SAVE_ITERATION==True:
+            # Use the .numpy() method to get the concrete numpy array
+            plot_img = init_image.numpy()
+            plot_img = deprocess_img(plot_img)
+            imgs.append(plot_img)
+            final_image = Image.fromarray(plot_img)
+            # Save the image
+            final_image.save('outputs/' + str(style_name) + '/' + str(style_name) + '-' + str(counter) + '.bmp')
+
+        if i ==num_iterations-1:
+            # Use the .numpy() method to get the concrete numpy array
+            plot_img = init_image.numpy()
+            plot_img = deprocess_img(plot_img)
+            imgs.append(plot_img)
+            final_image = Image.fromarray(plot_img)
+            # Save the image
+            final_image.save('test.bmp')
+
+    return best_img
 
 
-
-                imgs.append(plot_img)
-                # IPython.display.clear_output(wait=True)
-                # IPython.display.display_png(Image.fromarray(plot_img))
-                final_image = Image.fromarray(plot_img)
-                # Show the image
-                # final_image.show()
-                # Save the image
-                final_image.save('outputs/' + str(style_name) + '/' + str(style_name) + '-' + str(counter) + '.bmp')
-
-            if i ==num_iterations-1:
-                # Use the .numpy() method to get the concrete numpy array
-                plot_img = init_image.numpy()
-                plot_img = deprocess_img(plot_img)
-
-
-
-                imgs.append(plot_img)
-                # IPython.display.clear_output(wait=True)
-                # IPython.display.display_png(Image.fromarray(plot_img))
-                final_image = Image.fromarray(plot_img)
-                # Show the image
-                # final_image.show()
-                # Save the image
-                final_image.save('test.bmp')
-
-
-        # print('Total time: {:.4f}s'.format(time.time() - global_start))
-        #print("Done!")
-        return best_img
-        # IPython.display.clear_output(wait=True)
-        # plt.figure(figsize=(14, 4))
-        # for i, img in enumerate(imgs):
-        #     plt.subplot(num_rows, num_cols, i + 1)
-        #     plt.imshow(img)
-        #     plt.xticks([])
-        #     plt.yticks([])
-        # text = raw_input("Do you want to keep going?: 1 - yes, 0 - no")
-        # if( text == '0' or text == 'no' or text == 'n' or text=="No"):
-        #     print('here')
-        #     again = False
-        #
-        # text = raw_input("Do you want to save the clipped value?: 1 - yes, 0 - no")
-        # if (text == '1' or text == 'yes' or text == 'Yes' or text=="y"):
-        #    filehandler = open('clipped_values/' + str(style_name) + '_cippedValueAfter_' + str(counter), 'w')
-        #    pickle.dump(clipped, filehandler)
+if __name__ == "__main__":
+    # GPU Config settings
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 1
+    session = tf.Session(config=config)
+    #Start the program
+    enableEagerExecution()
+    best, best_loss = driver(content_path, style_path, num_iterations=1000)
+    #display the best image if you want
+    Image.fromarray(best)
