@@ -1,4 +1,5 @@
 # Mozart
+![](outputs/version1_0.gif)
 
 This is the code behind the project [Mozart](https://sidpremkumar.com/mozGan_v1.html). Check out my website to learn more about what I'm trying to do.
 
@@ -15,7 +16,7 @@ This is the code behind the neural style transfer. This is used to stylize the i
 This is the code behind Mozart. This program can stylize the inputs, and then after taking the code can load in the converted images.
 
 ### blend_images.py, get_background.py, select_most_interesting_thing.py
-These are works in progress. I am trying to develop code to select the most interesting thing in an image 
+These are works in progress. I am trying to develop code to select the most interesting thing in an image
 
 ## Aknowlegments
 * [AC-GAN in Keras](https://github.com/lukedeo/keras-acgan/blob/master/mnist_acgan.py)
