@@ -1,5 +1,6 @@
 # Mozart
 ![](outputs/version1_0.gif)
+![alt text](outputs/version1_0.gif)
 
 This is the code behind the project [Mozart](https://sidpremkumar.com/mozGan_v1.html). Check out my website to learn more about what I'm trying to do.
 
