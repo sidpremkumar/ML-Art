@@ -1,4 +1,3 @@
-# ML-Art
+# Mozart
 
-TODO: Finish the ReadMe...
-https://www.instagram.com/thisismozart/
+This is the code behind the project [Mozart](https://sidpremkumar.com/mozGan_v1.html)
